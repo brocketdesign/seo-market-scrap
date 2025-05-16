@@ -1,0 +1,58 @@
+const express = require('express');
+const dotenv = require('dotenv');
+const path = require('path'); // Import path module
+const cors = require('cors'); // Import cors module
+const connectDB = require('./config/db');
+
+// Import routes
+const adminRoutes = require('./routes/adminRoutes');
+const scrapingRoutes = require('./routes/scrapingRoutes'); // Import scraping routes
+const cronJobRoutes = require('./routes/cronJobRoutes'); // Import cron job routes
+
+// Load env vars from root .env file
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+connectDB();
+
+const app = express();
+
+// Logging middleware for all requests
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [BACKEND] Received request: ${req.method} ${req.url}`);
+  
+  // Log response status when the response is completed
+  res.on('finish', () => {
+    console.log(`[${timestamp}] [BACKEND] Response: ${res.statusCode} for ${req.method} ${req.url}`);
+  });
+  
+  next();
+});
+
+// CORS middleware
+app.use(cors({
+  origin: 'http://localhost:3000', // Allow frontend to access the API
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true, // Allow cookies to be sent with requests
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Init Middleware
+app.use(express.json({ extended: false }));
+
+app.get('/', (req, res) => res.send('API Running'));
+
+// Define Routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/scrape', scrapingRoutes); // Use scraping routes
+app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
+
+
+const PORT = process.env.BACKEND_PORT || 5001; // Changed from 5000 to 5001 to avoid conflicts
+
+app.listen(PORT, () => {
+  console.log('='.repeat(50));
+  console.log(`[BACKEND] Server started on port ${PORT}`);
+  console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('='.repeat(50));
+});
