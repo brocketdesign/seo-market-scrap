@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ImageSlider from './ImageSlider';
+import { type Locale, getDictionary } from '@/lib/i18n';
 
 interface ProductDetail {
   _id: string;
@@ -23,12 +24,16 @@ interface ProductDetail {
 
 interface ProductDetailProps {
   productId: string;
+  locale?: Locale;
 }
 
-export default function ProductDetail({ productId }: ProductDetailProps) {
+export default function ProductDetail({ productId, locale = 'en' }: ProductDetailProps) {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const dict = getDictionary(locale);
+  const basePath = locale === 'ja' ? '/ja' : '';
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -60,7 +65,15 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
 
   // Format the date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    if (locale === 'ja') {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -107,7 +120,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error</h3>
+            <h3 className="text-sm font-medium text-red-800">{dict.error}</h3>
             <div className="mt-2 text-sm text-red-700">
               <p>{error}</p>
             </div>
@@ -117,7 +130,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                 onClick={() => window.location.reload()}
                 className="inline-flex items-center rounded-md border border-transparent bg-red-100 px-3 py-2 text-sm font-medium leading-4 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
-                Try again
+                {locale === 'ja' ? 'もう一度試す' : 'Try again'}
               </button>
             </div>
           </div>
@@ -136,16 +149,16 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">Product not found</h3>
+            <h3 className="text-sm font-medium text-yellow-800">{dict.productNotFound}</h3>
             <div className="mt-2 text-sm text-yellow-700">
-              <p>Sorry, we couldn't find the product you're looking for.</p>
+              <p>{locale === 'ja' ? '申し訳ございませんが、お探しの商品が見つかりませんでした。' : 'Sorry, we couldn\'t find the product you\'re looking for.'}</p>
             </div>
             <div className="mt-4">
               <Link 
-                href="/search"
+                href={`${basePath}/search`}
                 className="inline-flex items-center rounded-md border border-transparent bg-yellow-100 px-3 py-2 text-sm font-medium leading-4 text-yellow-700 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
               >
-                Search for products
+                {locale === 'ja' ? '商品を検索' : 'Search for products'}
               </Link>
             </div>
           </div>
@@ -158,13 +171,13 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
     <div className="space-y-8">
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500">
-        <Link href="/" className="hover:underline">Home</Link>
+        <Link href={basePath || '/'} className="hover:underline">{dict.home}</Link>
         <span className="mx-2">/</span>
-        <Link href="/search" className="hover:underline">Products</Link>
+        <Link href={`${basePath}/search`} className="hover:underline">{dict.products}</Link>
         {product.category && (
           <>
             <span className="mx-2">/</span>
-            <Link href={`/tags/${product.category.toLowerCase()}`} className="hover:underline">{product.category}</Link>
+            <Link href={`${basePath}/tags/${product.category.toLowerCase()}`} className="hover:underline">{product.category}</Link>
           </>
         )}
         <span className="mx-2">/</span>
@@ -202,7 +215,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                     key={star}
                     xmlns="http://www.w3.org/2000/svg"
                     className={`h-5 w-5 ${
-                      star <= Math.floor(product.ratings.value) ? 'fill-current' : 'stroke-current fill-none'
+                      star <= Math.floor(product?.ratings?.value) ? 'fill-current' : 'stroke-current fill-none'
                     }`}
                     viewBox="0 0 24 24"
                   >
@@ -215,7 +228,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
                   </svg>
                 ))}
                 <span className="ml-1 text-sm text-gray-700">
-                  {product.ratings.value.toFixed(1)} ({product.ratings.count} reviews)
+                  {product.ratings.value.toFixed(1)} ({product.ratings.count} {dict.reviews})
                 </span>
               </div>
             </div>
@@ -223,19 +236,19 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
 
           {/* Description */}
           <div className="prose max-w-none text-gray-700">
-            <h2 className="text-xl font-semibold">Product Description</h2>
+            <h2 className="text-xl font-semibold">{dict.productDescription}</h2>
             <div className="whitespace-pre-line">{product.description}</div>
           </div>
 
           {/* Tags Section */}
           {product.tags && product.tags.length > 0 && (
             <div className="mt-4">
-              <h2 className="text-xl font-semibold mb-2">Product Tags</h2>
+              <h2 className="text-xl font-semibold mb-2">{dict.productTags}</h2>
               <div className="flex flex-wrap gap-2 border p-3 rounded-lg bg-gray-50">
                 {product.tags.map((tag, index) => (
                   <Link
                     key={index}
-                    href={`/tags/${encodeURIComponent(tag.toLowerCase())}`}
+                    href={`${basePath}/tags/${encodeURIComponent(tag.toLowerCase())}`}
                     className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +269,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              View on {product.source}
+              {locale === 'ja' ? `${product.source}で見る` : `View on ${product.source}`}
               <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -265,9 +278,9 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
 
           {/* Product metadata */}
           <div className="text-xs text-gray-500">
-            <p>Added: {formatDate(product.scrapedAt)}</p>
-            {product.lastUpdatedAt && <p>Last updated: {formatDate(product.lastUpdatedAt)}</p>}
-            {product.language && <p>Language: {product.language.toUpperCase()}</p>}
+            <p>{dict.addedOn}: {formatDate(product.scrapedAt)}</p>
+            {product.lastUpdatedAt && <p>{dict.lastUpdated}: {formatDate(product.lastUpdatedAt)}</p>}
+            {product.language && <p>{dict.language}: {product.language.toUpperCase()}</p>}
           </div>
         </div>
       </div>
@@ -275,7 +288,7 @@ export default function ProductDetail({ productId }: ProductDetailProps) {
       {/* Reviews Section - If available */}
       {product.reviews && product.reviews.length > 0 && (
         <div className="mt-12 border-t border-gray-200 pt-8">
-          <h2 className="text-2xl font-semibold mb-6">Customer Reviews</h2>
+          <h2 className="text-2xl font-semibold mb-6">{dict.customerReviews}</h2>
           <div className="space-y-6">
             {product.reviews.map((review, index) => (
               <div key={index} className="bg-white p-6 rounded-lg shadow-md">

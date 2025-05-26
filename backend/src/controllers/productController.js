@@ -221,7 +221,7 @@ const getPublicProducts = async (req, res) => {
     const filter = {};
     
     if (req.query.search) {
-      filter.$text = { $search: req.query.search };
+      filter.title = { $regex: req.query.search, $options: 'i' };
     }
     
     if (req.query.source && req.query.source !== 'all') {
@@ -235,6 +235,14 @@ const getPublicProducts = async (req, res) => {
     if (req.query.tag) {
       filter.tags = req.query.tag;
     }
+
+    // Filter by content language
+    if (req.query.contentLanguage) {
+      filter.contentLanguage = req.query.contentLanguage;
+    }
+
+    // Debug: log the filter to see what is being sent to MongoDB
+    console.log('Public products filter:', filter);
 
     // Build sort object
     let sort = {};

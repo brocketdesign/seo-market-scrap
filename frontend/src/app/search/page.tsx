@@ -32,7 +32,7 @@ export default function SearchPage({ searchParams }: { searchParams?: { [key: st
         {searchTerm ? `Showing products related to your search for "${searchTerm}".` : 'Use the filters to narrow down your search and find the perfect item.'}
       </p>
 
-      <SearchResults initialSearchTerm={searchTerm} />
+      <SearchResults initialSearchTerm={searchTerm} locale="en" />
     </div>
   );
 }

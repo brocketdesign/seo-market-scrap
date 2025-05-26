@@ -59,7 +59,10 @@ const ProductSchema = new Schema({
   // SEO specific fields
   metaTitle: String,
   metaDescription: String,
-  keywords: [String],
+  metaKeywords: [String],
+  seoTitle: String,
+  seoDescription: String,
+  seoKeywords: [String],
   // Tracking
   scrapedAt: {
     type: Date,
@@ -74,11 +77,27 @@ const ProductSchema = new Schema({
     trim: true,
     default: 'english',  // Default to English if not specified
   },
+  contentLanguage: {
+    type: String,
+    trim: true,
+    default: 'english',
+  },
   // You might want to add fields for stock status, variations, etc.
 });
 
 ProductSchema.index(
-  { title: 'text', description: 'text', tags: 'text', category: 'text' },
+  { 
+    title: 'text', 
+    description: 'text', 
+    tags: 'text', 
+    category: 'text',
+    seoTitle: 'text',
+    seoDescription: 'text',
+    seoKeywords: 'text',
+    metaTitle: 'text',
+    metaDescription: 'text',
+    metaKeywords: 'text'
+  },
   { default_language: 'english' }
 );
 ProductSchema.index({ source: 1, sourceProductId: 1 }, { unique: true, partialFilterExpression: { sourceProductId: { $exists: true } } });

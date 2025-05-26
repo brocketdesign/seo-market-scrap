@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { type Locale, getDictionary } from '@/lib/i18n';
 
 interface Product {
   _id: string;
@@ -13,25 +14,33 @@ interface Product {
   category?: string;
   tags?: string[];
   ratings?: { value: number; count: number };
+  contentLanguage: string;
 }
 
 interface SearchProps {
   initialSearchTerm: string;
+  initialTag?: string;
+  locale?: Locale;
 }
 
-export default function SearchResults({ initialSearchTerm }: SearchProps) {
+export default function SearchResults({ initialSearchTerm, initialTag, locale = 'en' }: SearchProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [tag, setTag] = useState(initialTag || '');
   const [source, setSource] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  const dict = getDictionary(locale);
+  const basePath = locale === 'ja' ? '/ja' : '';
+  const contentLanguage = locale === 'ja' ? 'japanese' : 'english';
 
   useEffect(() => {
     fetchProducts();
-  }, [searchTerm, source, sortBy, currentPage]);
+  }, [searchTerm, tag, source, sortBy, currentPage, contentLanguage]);
 
   async function fetchProducts() {
     setLoading(true);
@@ -43,10 +52,12 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
       
       // Add query parameters
       if (searchTerm) url.searchParams.append('search', searchTerm);
+      if (tag) url.searchParams.append('tag', tag);
       if (source !== 'all') url.searchParams.append('source', source);
       url.searchParams.append('sort', sortBy);
       url.searchParams.append('page', currentPage.toString());
       url.searchParams.append('limit', '12');
+      url.searchParams.append('contentLanguage', contentLanguage);
 
       const response = await fetch(url.toString());
       
@@ -58,7 +69,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
       setProducts(data.products || []);
       setTotalPages(data.totalPages || 1);
     } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching products');
+      setError(err.message || dict.error);
       console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
@@ -116,36 +127,36 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
     <div>
       {/* Filters */}
       <form onSubmit={handleSearch} className="mb-6">
-        <label htmlFor="search-input" className="sr-only">Search</label>
+        <label htmlFor="search-input" className="sr-only">{dict.search}</label>
         <div className="flex flex-col md:flex-row gap-4">
           <input
             id="search-input"
             type="search"
             name="q"
             defaultValue={searchTerm}
-            placeholder="Search products..."
+            placeholder={locale === 'ja' ? '商品を検索...' : 'Search products...'}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <button 
             type="submit" 
             className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
           >
-            Search
+            {locale === 'ja' ? '検索' : 'Search'}
           </button>
         </div>
       </form>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <p className="text-sm text-gray-500 mb-4 md:mb-0">
-          {loading ? 'Searching...' : 
-            products.length === 0 ? 'No products found' : 
-            `Showing ${products.length} product${products.length !== 1 ? 's' : ''}`}
+          {loading ? dict.loading : 
+            products.length === 0 ? dict.noProductsFound : 
+            `${locale === 'ja' ? '表示中' : 'Showing'} ${products.length} ${locale === 'ja' ? '商品' : `product${products.length !== 1 ? 's' : ''}`}`}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex items-center">
             <label htmlFor="source-filter" className="text-sm font-medium text-gray-700 mr-2">
-              Source:
+              {locale === 'ja' ? 'ソース:' : 'Source:'}
             </label>
             <select
               id="source-filter"
@@ -153,7 +164,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
               onChange={handleSourceChange}
               className="border border-gray-300 rounded-md text-sm py-1 px-2"
             >
-              <option value="all">All Sources</option>
+              <option value="all">{locale === 'ja' ? 'すべてのソース' : 'All Sources'}</option>
               <option value="amazon">Amazon</option>
               <option value="rakuten">Rakuten</option>
             </select>
@@ -161,7 +172,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
 
           <div className="flex items-center">
             <label htmlFor="sort-by" className="text-sm font-medium text-gray-700 mr-2">
-              Sort by:
+              {locale === 'ja' ? 'ソート:' : 'Sort by:'}
             </label>
             <select
               id="sort-by"
@@ -169,10 +180,10 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
               onChange={handleSortChange}
               className="border border-gray-300 rounded-md text-sm py-1 px-2"
             >
-              <option value="newest">Newest First</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="rating">Highest Rated</option>
+              <option value="newest">{locale === 'ja' ? '最新順' : 'Newest First'}</option>
+              <option value="price_asc">{locale === 'ja' ? '価格: 安い順' : 'Price: Low to High'}</option>
+              <option value="price_desc">{locale === 'ja' ? '価格: 高い順' : 'Price: High to Low'}</option>
+              <option value="rating">{locale === 'ja' ? '評価順' : 'Highest Rated'}</option>
             </select>
           </div>
         </div>
@@ -203,7 +214,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
             {products.map((product) => (
               <Link
                 key={product._id}
-                href={`/products/${product._id}`}
+                href={`${basePath}/products/${product._id}`}
                 className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
               >
                 <div className="w-full h-48 bg-gray-100 rounded-md mb-4 overflow-hidden relative">
@@ -270,7 +281,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
                   disabled={currentPage === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  Previous
+                  {locale === 'ja' ? '前' : 'Previous'}
                 </button>
                 {[...Array(totalPages)].map((_, i) => (
                   <button
@@ -290,7 +301,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
                   disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  Next
+                  {locale === 'ja' ? '次' : 'Next'}
                 </button>
               </nav>
             </div>
@@ -312,11 +323,15 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
               d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 className="text-xl font-medium text-gray-700 mb-2">No products found</h3>
+          <h3 className="text-xl font-medium text-gray-700 mb-2">{dict.noProductsFound}</h3>
           <p className="text-gray-500 mb-6">
             {searchTerm
-              ? `We couldn't find any products matching "${searchTerm}". Please try a different search term or filter.`
-              : 'Try different search terms or browse categories.'}
+              ? (locale === 'ja' 
+                  ? `「${searchTerm}」に一致する商品が見つかりませんでした。別の検索条件をお試しください。`
+                  : `We couldn't find any products matching "${searchTerm}". Please try a different search term or filter.`)
+              : (locale === 'ja' 
+                  ? '異なる検索条件を試すか、カテゴリを参照してください。'
+                  : 'Try different search terms or browse categories.')}
           </p>
           <button
             onClick={() => {
@@ -326,7 +341,7 @@ export default function SearchResults({ initialSearchTerm }: SearchProps) {
             }}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
           >
-            Clear Filters
+            {locale === 'ja' ? 'フィルターをクリア' : 'Clear Filters'}
           </button>
         </div>
       )}

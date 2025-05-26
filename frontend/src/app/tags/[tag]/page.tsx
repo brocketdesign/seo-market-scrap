@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import ClientTagResults from '@/app/components/ClientTagResults';
+import SearchResults from '@/app/components/SearchResults';
 
 // Helper function to generate dynamic metadata based on tag
 export async function generateMetadata({ params }: { params: { tag: string } }): Promise<Metadata> {
@@ -50,7 +50,7 @@ export default function TagPage({ params }: { params: { tag: string } }) {
         </p>
       </div>
       
-      <ClientTagResults tag={tag} />
+      <SearchResults initialSearchTerm="" initialTag={tag} locale="en" />
     </div>
   );
 }

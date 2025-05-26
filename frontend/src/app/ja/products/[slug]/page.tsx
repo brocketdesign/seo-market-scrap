@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import ProductDetail from '@/app/components/ProductDetail';
+import ProductDetail from '../../../components/ProductDetail';
 
 // Server-side function to fetch product data for metadata
 async function getProductData(id: string) {
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     slug.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   
   const productDescription = productData?.description || 
-    `Detailed information, reviews, and pricing for ${productTitle}. Compare and find the best deals.`;
+    `${productTitle}の詳細情報、レビュー、価格。最高のお得な情報を比較して見つけてください。`;
   
   const productImages = productData?.images?.length > 0 ? 
     [{ url: productData.images[0] }] : 
@@ -37,10 +37,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   
   const keywords = [
     productTitle,
-    'product details',
-    'reviews',
-    'pricing',
-    'comparison'
+    '商品詳細',
+    'レビュー',
+    '価格',
+    '比較',
+    '日本語'
   ];
   
   if (productData?.tags) {
@@ -51,16 +52,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     keywords.push(productData.category);
   }
   
-  if (productData?.source) {
-    keywords.push(productData.source);
-  }
-
   return {
-    title: `${productTitle} | Product Details | SEO Product Aggregator`,
+    title: `${productTitle} | SEO Product Aggregator`,
     description: productDescription,
     keywords: keywords,
     openGraph: {
-      title: `${productTitle} | Product Details`,
+      title: `${productTitle} | SEO Product Aggregator`,
       description: productDescription,
       type: 'website',
       images: productImages,
@@ -68,12 +65,21 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default function JapaneseProductPage({ params }: { params: { slug: string } }) {
+  const slug = params.slug;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <ProductDetail productId={slug} locale="en" />
+      {/* Breadcrumbs */}
+      <nav className="mb-6 text-sm text-gray-500">
+        <Link href="/ja" className="hover:underline">ホーム</Link>
+        <span className="mx-2">/</span>
+        <Link href="/ja/search" className="hover:underline">商品</Link>
+        <span className="mx-2">/</span>
+        <span className="text-gray-700">商品詳細</span>
+      </nav>
+
+      <ProductDetail productId={slug} locale="ja" />
     </div>
   );
 }
