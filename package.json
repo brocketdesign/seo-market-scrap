@@ -30,7 +30,7 @@
     "url": "https://github.com/brocketdesign/seo-market-scrap/issues"
   },
   "homepage": "https://github.com/brocketdesign/seo-market-scrap#readme",
-  "devDependencies": {
+  "dependencies": {
     "concurrently": "^8.2.2"
   }
 }
