@@ -41,14 +41,22 @@ const saveScrapedProduct = async (req, res) => {
 
   try {
     // Add additional processing or validation if needed
-    // For example, check for duplicates before saving
-    const existingProduct = await Product.findOne({ url: productData.url, source: productData.source });
+    // Check for duplicates before saving using sourceUrl instead of url
+    const existingProduct = await Product.findOne({ sourceUrl: productData.sourceUrl, source: productData.source });
     if (existingProduct) {
       return res.status(409).json({ message: 'Product already exists in the database.', productId: existingProduct._id });
     }
 
+    let contentLanguage = productData.contentLanguage || 'english'; // Default to English if not specified
+    if (contentLanguage === 'ja') {
+      contentLanguage = 'japanese';
+    } else if (contentLanguage === 'en') {
+      contentLanguage = 'english';
+    }
+    
     const newProduct = new Product({
       ...productData,
+      contentLanguage,
       // Ensure all required fields from ProductSchema are present or have defaults
       // category and tags might need to be derived or set manually later
       category: productData.category || 'Uncategorized', 

@@ -3,13 +3,15 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import React from 'react';
 
 interface DashboardStat {
   label: string;
   value: string | number;
   change?: string;
   isPositive?: boolean;
-  icon: JSX.Element;
+  icon: React.ReactNode;
 }
 
 interface CronJobSummary {
@@ -17,6 +19,27 @@ interface CronJobSummary {
   active: number;
   scheduled: number;
   failed: number;
+  upcomingJobs?: Array<CronJob>;
+  recentJobs?: Array<CronJob>;
+}
+
+interface CronJob {
+  _id: string;
+  name: string;
+  schedule: string;
+  query: string;
+  isActive: boolean;
+  lastRunAt?: string;
+  nextRunAt?: string;
+  status?: string;
+}
+
+interface Product {
+  _id: string;
+  title: string;
+  source: string;
+  images?: string[];
+  scrapedAt: string;
 }
 
 interface ProductSummary {
@@ -25,6 +48,7 @@ interface ProductSummary {
   rakuten: number;
   other: number;
   recentlyAdded: number;
+  recentProducts?: Array<Product>;
 }
 
 export default function AdminDashboardPage() {
@@ -69,21 +93,16 @@ export default function AdminDashboardPage() {
 
       const data = await response.json();
       
-      // Update stats with real data (if available)
-      setCronJobStats(data.cronJobs || {
-        total: 3,
-        active: 2,
-        scheduled: 1,
-        failed: 0
-      });
+      // Update stats with real data
+      if (data.cronJobs) {
+        setCronJobStats(data.cronJobs);
+      }
       
-      setProductStats(data.products || {
-        total: 254,
-        amazon: 189,
-        rakuten: 65,
-        other: 0,
-        recentlyAdded: 12
-      });
+      if (data.products) {
+        setProductStats(data.products);
+      }
+      
+      console.log('Dashboard data loaded:', data);
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching dashboard data');
       console.error('Dashboard data fetch error:', err);
@@ -262,61 +281,79 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))
-            ) : (
+            ) : error ? (
+              <div className="p-6 text-center text-red-500">Failed to load products</div>
+            ) : productStats.recentProducts && productStats.recentProducts.length > 0 ? (
               <>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded bg-blue-100 flex items-center justify-center text-blue-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                      </svg>
+                {productStats.recentProducts.map((product: Product) => {
+                  // Calculate how long ago the product was added
+                  const scrapedDate = new Date(product.scrapedAt);
+                  const now = new Date();
+                  const diffTime = Math.abs(now.getTime() - scrapedDate.getTime());
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  let timeAgo = 'today';
+                  if (diffDays === 1) timeAgo = 'yesterday';
+                  else if (diffDays > 1) timeAgo = `${diffDays} days ago`;
+                  
+                  // Determine icon background color based on source
+                  const bgColor = product.source === 'amazon' ? 'bg-blue-100' : 'bg-red-100';
+                  const textColor = product.source === 'amazon' ? 'text-blue-500' : 'text-red-500';
+                  
+                  return (
+                    <div key={product._id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-center">
+                        <div className={`flex-shrink-0 h-10 w-10 rounded ${bgColor} flex items-center justify-center ${textColor}`}>
+                          {product.images && product.images[0] ? (
+                            <div className="relative h-full w-full overflow-hidden rounded">
+                              {/* Using a safer approach to handle image loading */}
+                              {(() => {
+                                // Use proxy by default for Amazon images to avoid CORS issues
+                                const useProxy = product.source === 'amazon' || 
+                                  product.images[0].includes('amazon.com') ||
+                                  product.images[0].includes('ssl-images-amazon');
+                                
+                                const imageSrc = useProxy 
+                                  ? `/api/images?url=${encodeURIComponent(product.images[0])}`
+                                  : product.images[0];
+                                  
+                                return (
+                                  <Image 
+                                    src={imageSrc} 
+                                    alt={product.title}
+                                    fill
+                                    style={{ objectFit: 'cover' }}
+                                    onError={(e) => {
+                                      // If image still fails with proxy, try another image or fallback
+                                      const img = e.target as HTMLImageElement;
+                                      // Try the next image if available
+                                      if (product.images && product.images.length > 1) {
+                                        img.src = `/api/images?url=${encodeURIComponent(product.images[1])}`;
+                                      }
+                                    }}
+                                  />
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{product.title}</div>
+                          <div className="text-xs text-gray-500">
+                            {product.source.charAt(0).toUpperCase() + product.source.slice(1)} • Added {timeAgo}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">Sony WH-1000XM4 Headphones</div>
-                      <div className="text-xs text-gray-500">Amazon • Added today</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded bg-red-100 flex items-center justify-center text-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">Nintendo Switch OLED</div>
-                      <div className="text-xs text-gray-500">Rakuten • Added yesterday</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded bg-blue-100 flex items-center justify-center text-blue-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">Apple iPad Pro 12.9</div>
-                      <div className="text-xs text-gray-500">Amazon • Added 3 days ago</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded bg-blue-100 flex items-center justify-center text-blue-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">Samsung QLED TV</div>
-                      <div className="text-xs text-gray-500">Amazon • Added 4 days ago</div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </>
+            ) : (
+              <div className="p-6 text-center text-gray-500">No products found</div>
             )}
           </div>
         </div>
@@ -340,57 +377,58 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))
-            ) : (
+            ) : error ? (
+              <div className="p-6 text-center text-red-500">Failed to load scheduled jobs</div>
+            ) : cronJobStats.upcomingJobs && cronJobStats.upcomingJobs.length > 0 ? (
               <>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <div className="flex justify-between">
-                        <div className="text-sm font-medium text-gray-900">Daily Amazon Electronics</div>
-                        <div className="text-xs font-medium text-green-600">Active</div>
+                {cronJobStats.upcomingJobs.map((job: CronJob) => {
+                  // Determine icon and status based on job status
+                  const isActive = job.isActive;
+                  const bgColor = isActive ? 'bg-green-100' : 'bg-gray-100';
+                  const textColor = isActive ? 'text-green-500' : 'text-gray-400';
+                  const statusText = isActive ? 'Active' : 'Paused';
+                  const statusColor = isActive ? 'text-green-600' : 'text-gray-500';
+                  
+                  // Format the schedule text
+                  let scheduleText = job.schedule;
+                  if (scheduleText.includes('* * * * *')) {
+                    scheduleText = 'Runs every minute';
+                  } else if (scheduleText.includes('0 0 * * *')) {
+                    scheduleText = 'Runs daily at midnight';
+                  } else if (scheduleText.includes('0 0 * * 0')) {
+                    scheduleText = 'Runs every Sunday';
+                  } else if (scheduleText.includes('0 0 1 * *')) {
+                    scheduleText = 'Runs on 1st of every month';
+                  }
+                  
+                  return (
+                    <div key={job._id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-center">
+                        <div className={`flex-shrink-0 h-10 w-10 rounded-full ${bgColor} flex items-center justify-center ${textColor}`}>
+                          {isActive ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <div className="flex justify-between">
+                            <div className="text-sm font-medium text-gray-900">{job.name}</div>
+                            <div className={`text-xs font-medium ${statusColor}`}>{statusText}</div>
+                          </div>
+                          <div className="text-xs text-gray-500">{scheduleText}</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">Runs daily at midnight</div>
                     </div>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <div className="flex justify-between">
-                        <div className="text-sm font-medium text-gray-900">Weekly Rakuten Deals</div>
-                        <div className="text-xs font-medium text-green-600">Active</div>
-                      </div>
-                      <div className="text-xs text-gray-500">Runs every Sunday</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <div className="flex justify-between">
-                        <div className="text-sm font-medium text-gray-900">Monthly Best Sellers</div>
-                        <div className="text-xs font-medium text-gray-500">Paused</div>
-                      </div>
-                      <div className="text-xs text-gray-500">Runs on 1st of every month</div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </>
+            ) : (
+              <div className="p-6 text-center text-gray-500">No scheduled jobs found</div>
             )}
           </div>
         </div>

@@ -1,11 +1,17 @@
 const puppeteer = require('puppeteer');
+const Settings = require('../models/Settings');
+const { ScraperError, NetworkError, TimeoutError, logError } = require('./errorService');
 
 async function extractAmazonProductData(page, productUrl) {
   try {
-    await page.goto(productUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Get settings for timeout
+    const settings = await Settings.getSettings();
+    const timeout = settings?.scraperSettings?.requestTimeout || 30000;
+
+    await page.goto(productUrl, { waitUntil: 'networkidle2', timeout });
     
     // Wait for necessary elements to load
-    await page.waitForSelector('#productTitle', { timeout: 10000 }).catch(() => console.log('Title selector not found'));
+    await page.waitForSelector('#productTitle', { timeout: 10000 }).catch(() => console.log('[SCRAPER] Title selector not found'));
     
     // Extract product details
     const productData = await page.evaluate(() => {
@@ -38,16 +44,147 @@ async function extractAmazonProductData(page, productUrl) {
       const description = getTextContent('#productDescription p') || 
                           getTextContent('#feature-bullets .a-list-item') || '';
       
-      // Get product images
+      // Get product images - enhanced version for modern Amazon layout
       const images = [];
-      const imgElements = document.querySelectorAll('#altImages img, #imageBlock img');
-      imgElements.forEach(img => {
-        if (img.src && !img.src.includes('transparent') && !img.src.includes('pixel')) {
-          // Try to get the large version of the image
-          const src = img.src.replace(/_[S]C_/, '_AC_SL1500_');
-          images.push(src);
+      
+      // Try to get full resolution images from the image carousel (multiple approaches for different Amazon layouts)
+      
+      // Approach 1: Classic landing image with data attributes
+      const landingImage = document.getElementById('landingImage');
+      if (landingImage) {
+        if (landingImage.dataset && landingImage.dataset.oldHires) {
+          images.push(landingImage.dataset.oldHires);
+        } else if (landingImage.dataset && landingImage.dataset.aLargeImage) {
+          images.push(landingImage.dataset.aLargeImage);
+        } else if (landingImage.src) {
+          images.push(landingImage.src.replace(/\._[^\.]+_\./, '._SL1500_.'));
+        }
+      }
+      
+      // Approach 2: Modern Amazon image gallery with JSON data
+      try {
+        // Look for the image data in script tags (Amazon stores image data in JSON)
+        document.querySelectorAll('script:not([src])').forEach(script => {
+          if (script.textContent.includes('colorImages') || script.textContent.includes('imageGalleryData')) {
+            const scriptText = script.textContent;
+            
+            // Look for image data patterns
+            const dataMatch = scriptText.match(/'colorImages'\s*:\s*({[^}]+})/);
+            if (dataMatch) {
+              try {
+                // Try to parse the JSON-like structure (it's not always valid JSON)
+                const text = dataMatch[1].replace(/'/g, '"');
+                const jsonText = text.replace(/(\w+):/g, '"$1":');
+                const imageData = JSON.parse(jsonText);
+                
+                if (imageData && imageData.initial) {
+                  imageData.initial.forEach(img => {
+                    if (img.hiRes) images.push(img.hiRes);
+                    else if (img.large) images.push(img.large);
+                  });
+                }
+              } catch (e) {
+                // If JSON parsing fails, try regex extraction
+                const hiResMatches = scriptText.match(/hiRes['"]?\s*:\s*['"]([^'"]+)['"]/g);
+                if (hiResMatches) {
+                  hiResMatches.forEach(match => {
+                    const url = match.match(/hiRes['"]?\s*:\s*['"]([^'"]+)['"]/)[1];
+                    if (url) images.push(url);
+                  });
+                }
+              }
+            }
+          }
+        });
+      } catch (e) {
+        // Silently fail if the JSON extraction attempt fails
+      }
+      
+      // Get images from the variant selector
+      const variantImages = document.querySelectorAll('#imageBlock .imgSwatch img, #variation_color_name img, #variation_style_name img');
+      variantImages.forEach(img => {
+        if (img.dataset && img.dataset.oldHires) {
+          images.push(img.dataset.oldHires);
+        } else if (img.src) {
+          // Convert thumbnail URLs to high resolution
+          const hiResUrl = img.src.replace(/(._[A-Z0-9]+_\.)([a-zA-Z0-9]+)\./, '$1SL1500.$2');
+          images.push(hiResUrl);
         }
       });
+      
+      // Get carousel images
+      const carouselImages = document.querySelectorAll('.a-carousel img');
+      carouselImages.forEach(img => {
+        if (img.dataset && img.dataset.oldHires) {
+          images.push(img.dataset.oldHires);
+        }
+      });
+      
+      // Collect image URLs from thumbnail strips
+      const thumbnails = document.querySelectorAll('#altImages img, #thumbs-image img, .imageThumbnail img');
+      thumbnails.forEach(img => {
+        if (img.src && !img.src.includes('transparent') && !img.src.includes('pixel') && !img.src.includes('icon')) {
+          // Convert thumbnail to full size image
+          let src;
+          if (img.dataset && img.dataset.oldHires) {
+            src = img.dataset.oldHires;
+          } else {
+            // Try to transform the URL to get a higher resolution version
+            src = img.src
+              .replace(/_S[CX]_/, '_AC_SL1500_')
+              .replace(/_SR\d+,\d+/, '_SL1500_')
+              .replace(/_SY\d+_SX\d+/, '_SL1500_')
+              .replace(/\._([^\.]+)_\./, '._SL1500_.');
+          }
+          
+          // Only add if not already in the array and not a small icon
+          if (!images.includes(src) && !src.includes('icon') && !src.includes('gif')) {
+            images.push(src);
+          }
+        }
+      });
+      
+      // If we still don't have images, try a broader search
+      if (images.length === 0) {
+        const allImages = document.querySelectorAll('img[src*="images-amazon"], img[src*="m.media-amazon"]');
+        allImages.forEach(img => {
+          if (img.src && 
+              !img.src.includes('transparent') && 
+              !img.src.includes('pixel') && 
+              !img.src.includes('icon') && 
+              !img.src.includes('gif') &&
+              img.width > 100 && 
+              img.height > 100) {
+            // Extract the base URL without size parameters
+            let src = img.src;
+            
+            // Handle various Amazon image URL patterns
+            src = src
+              // Replace size indicators with high-res version
+              .replace(/_S[CX]_/, '_AC_SL1500_')
+              .replace(/_SR\d+,\d+/, '_SL1500_')
+              .replace(/_SY\d+_SX\d+/, '_SL1500_')
+              .replace(/\._(S|SR|SY|SX|UY|UX|CR|AC|AA)\d+_\./, '._SL1500_.')
+              // Handle other common patterns
+              .replace(/\._(CB\d+)_\./, '._SL1500_.')
+              // Make sure we're getting a jpg/png when possible
+              .replace(/\.(gif|webp)([?#].+)?$/, '.jpg$2');
+              
+            if (!images.includes(src)) {
+              images.push(src);
+              
+              // Also try the direct large version as Amazon sometimes uses different patterns
+              const largeVersion = src.replace(/\.(jpg|png|jpeg)/, '._AC_SL1500_.$1');
+              if (largeVersion !== src && !images.includes(largeVersion)) {
+                images.push(largeVersion);
+              }
+            }
+          }
+        });
+      }
+      
+      // Remove duplicates and limit to reasonable number
+      const uniqueImages = [...new Set(images)].slice(0, 10);
       
       // Get product ratings
       const ratingText = getTextContent('.a-icon-star, #acrPopover');
@@ -66,27 +203,84 @@ async function extractAmazonProductData(page, productUrl) {
         }
       });
 
-      // Extract category
-      const categoryElements = document.querySelectorAll('#wayfinding-breadcrumbs_container .a-link-normal');
-      const categories = Array.from(categoryElements).map(a => a.textContent.trim()).filter(Boolean);
-      const category = categories.length > 0 ? categories[categories.length - 1] : 'Uncategorized';
+      // Extract category and breadcrumbs for tags
+      // Try multiple selectors for breadcrumbs
+      const breadcrumbSelectors = [
+        '#wayfinding-breadcrumbs_container .a-link-normal',
+        '#wayfinding-breadcrumbs_feature_div a',
+        '.a-breadcrumb a',
+        '[role=navigation] a',
+        'a[href*="/s?"]',
+        'a.a-color-tertiary'
+      ];
       
-      // Extract product tags/keywords
-      const keywords = [];
+      let breadcrumbs = [];
+      
+      for (const selector of breadcrumbSelectors) {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          const tempBreadcrumbs = Array.from(elements)
+            .map(a => a.textContent.trim())
+            .filter(text => text && text.length < 50); // Filter out likely non-breadcrumb items
+          
+          if (tempBreadcrumbs.length > 0) {
+            breadcrumbs = tempBreadcrumbs;
+            break;
+          }
+        }
+      }
+      
+      // If no breadcrumbs found, try to determine category from URL or title
+      if (breadcrumbs.length === 0) {
+        // Check URL for category hints
+        const url = window.location.href;
+        if (url.includes('/baby-products/') || url.includes('/baby/')) {
+          breadcrumbs = ['Baby Products'];
+        } else if (url.includes('/electronics/')) {
+          breadcrumbs = ['Electronics'];
+        } else if (url.includes('/home-garden/')) {
+          breadcrumbs = ['Home & Garden'];
+        } else if (url.includes('/kitchen/') || title.includes('kitchen')) {
+          breadcrumbs = ['Kitchen'];
+        } else if (title.includes('basket') || title.includes('storage')) {
+          breadcrumbs = ['Home & Kitchen', 'Storage & Organization'];
+        } else {
+          // Default category
+          breadcrumbs = ['Gifts'];
+        }
+      }
+      
+      // Use the first breadcrumb as the primary category
+      const category = breadcrumbs.length > 0 ? breadcrumbs[0] : 'Uncategorized';
+      
+      // Use all breadcrumbs as tags
+      const tags = [...breadcrumbs];
+      
+      // Add additional product tags/keywords if any
       document.querySelectorAll('.zg_hrsr_item, .a-link-normal[href*="keywords="]').forEach(el => {
         const text = el.textContent.trim();
-        if (text) keywords.push(text);
+        if (text && !tags.includes(text)) {
+          tags.push(text);
+        }
       });
+      
+      // Get the page language
+      let pageLanguage = 'en'; // Default to English
+      const htmlElement = document.querySelector('html');
+      if (htmlElement && htmlElement.lang) {
+        pageLanguage = htmlElement.lang.split('-')[0]; // Get the base language code
+      }
       
       return {
         title,
         price,
         description,
-        images,
+        images: uniqueImages,
         ratings: { score: ratingValue || 0, count: countValue || 0 },
         reviews,
         category,
-        tags: keywords,
+        tags,
+        contentLanguage: pageLanguage,
       };
     });
     
@@ -96,27 +290,26 @@ async function extractAmazonProductData(page, productUrl) {
       sourceUrl: productUrl,
     };
   } catch (error) {
-    console.error(`Error extracting Amazon product data: ${error.message}`);
-    throw error;
+    logError(error, 'extractAmazonProductData', { productUrl });
+    
+    if (error.name === 'TimeoutError') {
+      throw new TimeoutError(`Timeout while extracting Amazon product data: ${error.message}`, 30000, { productUrl });
+    } else if (error.message.includes('net::ERR')) {
+      throw new NetworkError(`Network error while extracting Amazon product data: ${error.message}`, productUrl);
+    } else {
+      throw new ScraperError(`Error extracting Amazon product data: ${error.message}`, { productUrl });
+    }
   }
 }
 
 async function scrapeAmazon(keywordOrUrl) {
-  console.log(`Scraping Amazon for: ${keywordOrUrl}`);
+  console.log(`[SCRAPER] Scraping Amazon for: ${keywordOrUrl}`);
+  
+  // Get browser configuration from settings
+  const browserConfig = await getBrowserConfig();
   
   // Launch browser with stealth mode to avoid detection
-  const browser = await puppeteer.launch({
-    headless: 'new', // Using the new headless mode
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-infobars',
-      '--window-position=0,0',
-      '--ignore-certifcate-errors',
-      '--ignore-certifcate-errors-spki-list',
-      '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"',
-    ]
-  });
+  const browser = await puppeteer.launch(browserConfig);
   
   try {
     const page = await browser.newPage();
@@ -183,8 +376,12 @@ async function scrapeAmazon(keywordOrUrl) {
       return products;
     }
   } catch (error) {
-    console.error(`Amazon scraping error: ${error.message}`);
-    await browser.close();
+    logError(error, 'scrapeAmazon', { keywordOrUrl });
+    try {
+      await browser.close();
+    } catch (closeError) {
+      console.error(`Error closing browser: ${closeError.message}`);
+    }
     // Return empty array to indicate no products found
     return [];
   }
@@ -192,10 +389,15 @@ async function scrapeAmazon(keywordOrUrl) {
 
 async function extractRakutenProductData(page, productUrl) {
   try {
-    await page.goto(productUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Get settings for timeout
+    const settings = await Settings.getSettings();
+    const timeout = settings?.scraperSettings?.requestTimeout || 30000;
     
-    // Wait for necessary elements to load
-    await page.waitForSelector('.item_name, .productTitle', { timeout: 10000 }).catch(() => console.log('Title selector not found'));
+    await page.goto(productUrl, { waitUntil: 'networkidle2', timeout });
+    
+    // Wait for necessary elements to load - updated for modern Rakuten layout
+    await page.waitForSelector('.text-container--2tSUW, .item_name, .productTitle', { timeout: 10000 })
+      .catch(() => console.log('[SCRAPER] Title selector not found for Rakuten product'));
     
     // Extract product details
     const productData = await page.evaluate(() => {
@@ -204,72 +406,229 @@ async function extractRakutenProductData(page, productUrl) {
         return element ? element.textContent.trim() : '';
       };
       
-      // Get product title
-      const title = getTextContent('.item_name') || getTextContent('.productTitle');
+      // Get product title - support both new and old layouts
+      const title = document.querySelector('.text-container--2tSUW .ellipsis--395xS')?.textContent.trim() ||
+                    document.querySelector('.text-container--2tSUW')?.textContent.trim() ||
+                    getTextContent('.item_name') || 
+                    getTextContent('.productTitle');
       
-      // Get product price
+      // Get product price - modern Rakuten layout uses a different price format
       let price = '';
-      const priceSelectors = [
-        '.price2, .price, .important-price',
-        '#priceCalculationConfig'
-      ];
-      
-      for (const selector of priceSelectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-          price = element.textContent.trim();
-          break;
+      // Try new price format first
+      const priceElement = document.querySelector('.value--1oSD_');
+      if (priceElement) {
+        const priceValue = priceElement.textContent.trim();
+        const currencyElement = document.querySelector('.suffix--5oXks .text-display--2xC98');
+        const currency = currencyElement ? currencyElement.textContent.trim() : '円';
+        price = priceValue + currency;
+      } else {
+        // Fall back to traditional selectors
+        const priceSelectors = [
+          '.price2, .price, .important-price',
+          '#priceCalculationConfig'
+        ];
+        
+        for (const selector of priceSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            price = element.textContent.trim();
+            break;
+          }
         }
       }
       
       // Get product description
       const description = getTextContent('#itemDescription, .itemDescription, .item_desc, .mdItemDescription') || '';
       
-      // Get product images
+      // Get product images - updated for modern Rakuten layout
       const images = [];
-      const imgElements = document.querySelectorAll('#imageDisplay img, .rakutenLimitedId_ImageMain1-3 img');
-      imgElements.forEach(img => {
-        if (img.src && !img.src.includes('transparent') && !img.src.includes('pixel')) {
-          images.push(img.src);
-        }
-      });
       
-      // Get product ratings
-      const ratingElement = document.querySelector('.revEvaluate span');
-      let ratingValue = 0;
-      if (ratingElement) {
-        const ratingMatch = ratingElement.textContent.match(/\d+(\.\d+)?/);
-        ratingValue = ratingMatch ? parseFloat(ratingMatch[0]) : 0;
+      // Modern layout - handle the new structure with specific class names
+      const modernImageSelectors = [
+        '.image--BGsMl', // Main product image from the example
+        'img[src*="thumbnail.image.rakuten.co.jp"]',
+        'img[src*="r.r10s.jp"]',
+        '#imageDisplay img',
+        '.rakutenLimitedId_ImageMain1-3 img'
+      ];
+      
+      for (const selector of modernImageSelectors) {
+        const imgElements = document.querySelectorAll(selector);
+        imgElements.forEach(img => {
+          if (img.src && 
+              !img.src.includes('transparent') && 
+              !img.src.includes('pixel') &&
+              !img.src.includes('common') && 
+              !img.src.includes('icon') &&
+              !img.src.includes('star-') && // Exclude star rating images
+              !img.src.includes('svg') &&
+              img.width > 50 && img.height > 50) { // Ensure it's not a tiny icon
+            
+            // Convert thumbnail to full size by removing size constraints
+            let fullSizeUrl = img.src;
+            
+            // Handle the @0_mall pattern and size parameters
+            if (fullSizeUrl.includes('@0_mall')) {
+              // Remove size constraints like ?_ex=288x288
+              fullSizeUrl = fullSizeUrl.replace(/\?_ex=\d+x\d+/, '');
+              // Try to get larger version by replacing size in path
+              fullSizeUrl = fullSizeUrl.replace(/@\d+_mall/, '@0_mall');
+            }
+            
+            // Handle other thumbnail patterns
+            if (fullSizeUrl.includes('thumbnail')) {
+              fullSizeUrl = fullSizeUrl.replace(/@\d+x\d+/, '');
+            }
+            
+            if (!images.includes(fullSizeUrl)) {
+              images.push(fullSizeUrl);
+            }
+          }
+        });
+        
+        // Break if we found images with this selector
+        if (images.length > 0) break;
       }
       
-      const ratingCount = getTextContent('.revEvaluate');
-      const countValue = ratingCount ? parseInt(ratingCount.replace(/[^0-9]/g, '')) : 0;
+      // If still no images found, try a broader search
+      if (images.length === 0) {
+        const allImages = document.querySelectorAll('img[src*="rakuten"], img[src*="r10s.jp"]');
+        allImages.forEach(img => {
+          if (img.src && 
+              !img.src.includes('transparent') && 
+              !img.src.includes('pixel') &&
+              !img.src.includes('icon') &&
+              !img.src.includes('star-') &&
+              !img.src.includes('svg') &&
+              !img.src.includes('logo') &&
+              img.width > 100 && 
+              img.height > 100) {
+            
+            let fullSizeUrl = img.src.replace(/\?_ex=\d+x\d+/, '').replace(/@\d+x\d+/, '');
+            
+            if (!images.includes(fullSizeUrl)) {
+              images.push(fullSizeUrl);
+            }
+          }
+        });
+      }
       
-      // Get reviews (sample)
+      // Remove duplicates and limit to reasonable number
+      const uniqueImages = [...new Set(images)].slice(0, 10);
+      
+      // Get product ratings - updated for modern star layout
+      let ratingValue = 0;
+      let countValue = 0;
+      
+      // Modern rating layout with star images - updated based on HTML example
+      const ratingContainer = document.querySelector('.rating-container--1utdQ');
+      if (ratingContainer) {
+        // Look for rating value in number wrapper
+        const ratingNumber = ratingContainer.querySelector('.number-wrapper-l--JjxAC .text-container--2tSUW') || 
+                           ratingContainer.querySelector('.number-wrapper-xl--LyvuU .value--1oSD_');
+        
+        if (ratingNumber) {
+          ratingValue = parseFloat(ratingNumber.textContent.trim());
+        } else {
+          // Count filled stars - updated for new star structure
+          const starContainer = ratingContainer.querySelector('.star-container--I4Q5E');
+          if (starContainer) {
+            const allStars = starContainer.querySelectorAll('img[alt="star-rating"]');
+            const filledStars = Array.from(allStars).filter(star => 
+              star.src && !star.src.includes('star-empty')
+            );
+            ratingValue = filledStars.length;
+          }
+        }
+        
+        // Look for review count - check for various patterns
+        const reviewCountSelectors = [
+          '.amount-wrapper-xl--38iTg .text-container--2tSUW',
+          '.text-container--2tSUW[class*="color-gray-dark"]'
+        ];
+        
+        for (const selector of reviewCountSelectors) {
+          const reviewCountElement = document.querySelector(selector);
+          if (reviewCountElement) {
+            const text = reviewCountElement.textContent;
+            const countMatch = text.match(/(\d+)件/) || text.match(/\((\d+)\)/);
+            if (countMatch && countMatch[1]) {
+              countValue = parseInt(countMatch[1]);
+              break;
+            }
+          }
+        }
+      } else {
+        // Fall back to traditional rating selectors
+        const ratingElement = document.querySelector('.revEvaluate span');
+        if (ratingElement) {
+          const ratingMatch = ratingElement.textContent.match(/\d+(\.\d+)?/);
+          ratingValue = ratingMatch ? parseFloat(ratingMatch[0]) : 0;
+        }
+        
+        const ratingCount = getTextContent('.revEvaluate');
+        countValue = ratingCount ? parseInt(ratingCount.replace(/[^0-9]/g, '')) : 0;
+      }
+      
+      // Get reviews (sample) - updated for modern review layout
       const reviews = [];
-      const reviewElements = document.querySelectorAll('.revRvwUserSec');
+      const reviewElements = document.querySelectorAll('.review-body--3myhE, .revRvwUserSec');
       reviewElements.forEach((review, index) => {
         if (index < 5) { // Limit to 5 reviews
-          const reviewText = review.querySelector('.revRvwUserEntryComment')?.textContent.trim() || '';
-          const author = review.querySelector('.revRvwUserEntryUserName')?.textContent.trim() || 'Anonymous';
-          reviews.push({ author, text: reviewText });
+          // Handle modern review structure
+          if (review.classList.contains('review-body--3myhE')) {
+            // Find parent container to get reviewer info
+            const reviewContainer = review.closest('li');
+            let author = 'Anonymous';
+            if (reviewContainer) {
+              const nameElem = reviewContainer.querySelector('.reviewer-name--3aHc3');
+              if (nameElem) author = nameElem.textContent.trim();
+            }
+            reviews.push({ 
+              author, 
+              text: review.textContent.trim(),
+              rating: reviewContainer ? parseInt(reviewContainer.querySelector('.number-wrapper-l--JjxAC')?.textContent.trim() || 5) : 5
+            });
+          } else {
+            // Handle legacy review structure
+            const reviewText = review.querySelector('.revRvwUserEntryComment')?.textContent.trim() || '';
+            const author = review.querySelector('.revRvwUserEntryUserName')?.textContent.trim() || 'Anonymous';
+            reviews.push({ author, text: reviewText });
+          }
         }
       });
 
-      // Extract category
-      const categoryElements = document.querySelectorAll('.breadcrumbs a');
-      const categories = Array.from(categoryElements).map(a => a.textContent.trim()).filter(Boolean);
-      const category = categories.length > 0 ? categories[categories.length - 1] : 'Uncategorized';
+      // Extract category and breadcrumbs for tags
+      // Support both modern and traditional breadcrumbs
+      const categoryElements = document.querySelectorAll('.breadcrumbs a, a[href*="/s/"]');
+      const breadcrumbs = Array.from(categoryElements)
+        .map(a => a.textContent.trim())
+        .filter(Boolean);
+      
+      // Use the first breadcrumb as the primary category
+      const category = breadcrumbs.length > 0 ? breadcrumbs[0] : 'Uncategorized';
+      
+      // Get the page language
+      let pageLanguage = 'ja'; // Default to Japanese for Rakuten
+      const htmlElement = document.querySelector('html');
+      if (htmlElement && htmlElement.lang) {
+        pageLanguage = htmlElement.lang.split('-')[0]; // Get the base language code
+      }
+      // Convert to 'japanese' if it's 'ja'
+      if (pageLanguage === 'ja') {
+        pageLanguage = 'japanese';
+      }
       
       return {
         title,
         price,
         description,
-        images,
+        images: uniqueImages, // Use the processed unique images
         ratings: { score: ratingValue || 0, count: countValue || 0 },
         reviews,
         category,
-        tags: categories, // Using breadcrumbs as tags by default
+        tags: breadcrumbs, // Using breadcrumbs as tags
+        contentLanguage: pageLanguage,
       };
     });
     
@@ -279,25 +638,26 @@ async function extractRakutenProductData(page, productUrl) {
       sourceUrl: productUrl,
     };
   } catch (error) {
-    console.error(`Error extracting Rakuten product data: ${error.message}`);
-    throw error;
+    logError(error, 'extractRakutenProductData', { productUrl });
+    
+    if (error.name === 'TimeoutError') {
+      throw new TimeoutError(`Timeout while extracting Rakuten product data: ${error.message}`, 30000, { productUrl });
+    } else if (error.message.includes('net::ERR')) {
+      throw new NetworkError(`Network error while extracting Rakuten product data: ${error.message}`, productUrl);
+    } else {
+      throw new ScraperError(`Error extracting Rakuten product data: ${error.message}`, { productUrl });
+    }
   }
 }
 
 async function scrapeRakuten(keywordOrUrl) {
-  console.log(`Scraping Rakuten for: ${keywordOrUrl}`);
+  console.log(`[SCRAPER] Scraping Rakuten for: ${keywordOrUrl}`);
   
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-infobars',
-      '--window-position=0,0',
-      '--ignore-certifcate-errors',
-      '--ignore-certifcate-errors-spki-list',
-    ]
-  });
+  // Get browser configuration from settings
+  const browserConfig = await getBrowserConfig();
+  
+  // Launch browser
+  const browser = await puppeteer.launch(browserConfig);
   
   try {
     const page = await browser.newPage();
@@ -356,28 +716,123 @@ async function scrapeRakuten(keywordOrUrl) {
       return products;
     }
   } catch (error) {
-    console.error(`Rakuten scraping error: ${error.message}`);
-    await browser.close();
+    logError(error, 'scrapeRakuten', { keywordOrUrl });
+    try {
+      await browser.close();
+    } catch (closeError) {
+      console.error(`Error closing browser: ${closeError.message}`);
+    }
     return [];
   }
 }
 
 async function scrapeProductData(keywordOrUrl, source) {
+  if (!keywordOrUrl) {
+    throw new ScraperError('No keyword or URL provided for scraping');
+  }
+
   let results = [];
   const isUrl = keywordOrUrl.startsWith('http://') || keywordOrUrl.startsWith('https://');
 
-  // Basic URL detection to decide if it's a direct product page or search keyword
-  // More sophisticated URL parsing would be needed for actual product pages
+  try {
+    // Get settings
+    const settings = await Settings.getSettings();
+    const { scraperSettings } = settings;
+    
+    // Apply wait time between scraping operations
+    const waitTime = scraperSettings?.waitTime || 2000;
+    
+    if (source === 'amazon' || source === 'all') {
+      console.log(`[SCRAPER] Starting Amazon scraping for: ${keywordOrUrl}`);
+      const amazonResults = await scrapeAmazon(keywordOrUrl);
+      results = results.concat(amazonResults);
+      
+      // Wait between scraping operations if multiple sources
+      if (source === 'all' && waitTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+    
+    if (source === 'rakuten' || source === 'all') {
+      console.log(`[SCRAPER] Starting Rakuten scraping for: ${keywordOrUrl}`);
+      const rakutenResults = await scrapeRakuten(keywordOrUrl);
+      results = results.concat(rakutenResults);
+    }
+    
+    console.log(`[SCRAPER] Completed scraping. Found ${results.length} products.`);
+    return results;
+  } catch (error) {
+    logError(error, 'scrapeProductData', { keywordOrUrl, source });
+    throw new ScraperError(`Error scraping data: ${error.message}`, {
+      source,
+      keywordOrUrl,
+      originalError: error.message
+    });
+  }
+}
 
-  if (source === 'amazon' || source === 'all') {
-    const amazonResults = await scrapeAmazon(keywordOrUrl);
-    results = results.concat(amazonResults);
+/**
+ * Get browser configuration from settings
+ * @returns {Promise<Object>} Browser launch options based on settings
+ */
+async function getBrowserConfig() {
+  try {
+    // Get settings from database
+    const settings = await Settings.getSettings();
+    const { scraperSettings } = settings;
+    
+    // Default config
+    const config = {
+      headless: 'new',
+      args: [
+        '--disable-setuid-sandbox',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--disable-infobars',
+        '--window-position=0,0',
+        '--ignore-certificate-errors',
+        '--ignore-certificate-errors-skip-list',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-blink-features=AutomationControlled',
+        `--window-size=1920,1080`,
+      ],
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+    };
+    
+    // Add user agent if specified in settings
+    if (scraperSettings?.userAgent) {
+      config.args.push(`--user-agent=${scraperSettings.userAgent}`);
+    }
+    
+    // Add proxy if enabled in settings
+    if (scraperSettings?.useProxy && Array.isArray(scraperSettings.proxyList) && scraperSettings.proxyList.length > 0) {
+      // Select a random proxy from the list
+      const randomProxy = scraperSettings.proxyList[Math.floor(Math.random() * scraperSettings.proxyList.length)];
+      if (randomProxy) {
+        config.args.push(`--proxy-server=${randomProxy}`);
+      }
+    }
+    
+    return config;
+  } catch (error) {
+    logError(error, 'getBrowserConfig');
+    // Return default config if there's an issue
+    return {
+      headless: 'new',
+      args: [
+        '--disable-setuid-sandbox',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
+      ]
+    };
   }
-  if (source === 'rakuten' || source === 'all') {
-    const rakutenResults = await scrapeRakuten(keywordOrUrl);
-    results = results.concat(rakutenResults);
-  }
-  return results;
 }
 
 module.exports = {

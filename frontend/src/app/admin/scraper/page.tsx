@@ -27,6 +27,7 @@ export default function ScraperPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+  const [isSavingAll, setIsSavingAll] = useState(false);
   
   // Handle form submission for scraping
   const handleScrapeSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -123,6 +124,81 @@ export default function ScraperPage() {
       ...prev,
       [productId]: false
     }));
+  };
+
+  // Handle saving all products
+  const handleSaveAllProducts = async () => {
+    if (scrapedProducts.length === 0) return;
+    
+    setIsSavingAll(true);
+    setError(null);
+    setSaveMessage(null);
+    
+    if (!session || !session.accessToken) {
+      setError('Authentication error or missing token. Please sign in again.');
+      setIsSavingAll(false);
+      return;
+    }
+    
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      let successCount = 0;
+      let failCount = 0;
+      
+      // Create a copy of the products array since we'll be modifying the original during the process
+      const productsToSave = [...scrapedProducts];
+      
+      for (const product of productsToSave) {
+        const productId = `${product.source}-${encodeURIComponent(product.sourceUrl)}`;
+        
+        // Set this specific product to saving state
+        setSavingStates(prev => ({
+          ...prev,
+          [productId]: true
+        }));
+        
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/scrape/save`, { 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.accessToken}`,
+            },
+            body: JSON.stringify(product),
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            successCount++;
+            // Remove the saved product from the list
+            setScrapedProducts(prev => prev.filter(p => 
+              p.sourceUrl !== product.sourceUrl || p.source !== product.source
+            ));
+          } else {
+            failCount++;
+          }
+        } catch (err) {
+          failCount++;
+        }
+        
+        // Reset saving state for this product
+        setSavingStates(prev => ({
+          ...prev,
+          [productId]: false
+        }));
+      }
+      
+      if (successCount > 0) {
+        setSaveMessage(`Successfully saved ${successCount} products${failCount > 0 ? `, failed to save ${failCount} products` : ''}.`);
+      } else if (failCount > 0) {
+        setError(`Failed to save ${failCount} products.`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred while saving products.');
+    }
+    
+    setIsSavingAll(false);
   };
 
   // Format rating display
@@ -258,13 +334,37 @@ export default function ScraperPage() {
       {/* Scraped Results */}
       {scrapedProducts.length > 0 && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 text-indigo-600">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
               </svg>
               Scraped Products ({scrapedProducts.length})
             </h2>
+            
+            {/* Save All Button */}
+            <button 
+              onClick={handleSaveAllProducts}
+              disabled={isSavingAll || scrapedProducts.length === 0}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-300"
+            >
+              {isSavingAll ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving All...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save All
+                </>
+              )}
+            </button>
           </div>
           
           <div className="divide-y divide-gray-200">

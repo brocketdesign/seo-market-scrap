@@ -21,9 +21,6 @@ const protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
-      if (req.user.role !== 'admin') {
-         return res.status(403).json({ message: 'Not authorized, admin role required' });
-      }
 
       next();
     } catch (error) {
@@ -37,4 +34,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized, admin role required' });
+  }
+};
+
+module.exports = { protect, admin };

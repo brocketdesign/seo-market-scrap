@@ -69,10 +69,18 @@ const ProductSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  language: {
+    type: String,
+    trim: true,
+    default: 'english',  // Default to English if not specified
+  },
   // You might want to add fields for stock status, variations, etc.
 });
 
-ProductSchema.index({ title: 'text', description: 'text', tags: 'text', category: 'text' }); // For text search
+ProductSchema.index(
+  { title: 'text', description: 'text', tags: 'text', category: 'text' },
+  { default_language: 'english' }
+);
 ProductSchema.index({ source: 1, sourceProductId: 1 }, { unique: true, partialFilterExpression: { sourceProductId: { $exists: true } } });
 
 module.exports = mongoose.model('Product', ProductSchema);

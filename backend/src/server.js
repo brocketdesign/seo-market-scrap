@@ -3,11 +3,15 @@ const dotenv = require('dotenv');
 const path = require('path'); // Import path module
 const cors = require('cors'); // Import cors module
 const connectDB = require('./config/db');
+const { initializeScheduler } = require('./services/schedulerService');
+const { initializeCleanup } = require('./services/cleanupService');
 
 // Import routes
 const adminRoutes = require('./routes/adminRoutes');
 const scrapingRoutes = require('./routes/scrapingRoutes'); // Import scraping routes
 const cronJobRoutes = require('./routes/cronJobRoutes'); // Import cron job routes
+const productRoutes = require('./routes/productRoutes'); // Import product routes
+const settingsRoutes = require('./routes/settingsRoutes'); // Import settings routes
 
 // Load env vars from root .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -46,6 +50,8 @@ app.get('/', (req, res) => res.send('API Running'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/scrape', scrapingRoutes); // Use scraping routes
 app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
+app.use('/api/products', productRoutes); // Use product routes
+app.use('/api/settings', settingsRoutes); // Use settings routes
 
 
 const PORT = process.env.BACKEND_PORT || 5001; // Changed from 5000 to 5001 to avoid conflicts
@@ -55,4 +61,10 @@ app.listen(PORT, () => {
   console.log(`[BACKEND] Server started on port ${PORT}`);
   console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('='.repeat(50));
+  
+  // Initialize the scheduler service
+  initializeScheduler();
+  
+  // Initialize the cleanup service
+  initializeCleanup();
 });
