@@ -20,7 +20,7 @@
     "install:all": "npm install && npm run install:backend && npm run install:frontend",
     "logs:backend": "cd backend && nodemon --quiet src/server.js | grep --color=always \"\\[BACKEND\\]\"",
     "build:frontend": "cd frontend && npm install && npm run build",
-    "heroku-postbuild": "npm run install:backend"
+    "heroku-postbuild": "npm run install:backend && npm run build:frontend"
   },
   "repository": {
     "type": "git",
