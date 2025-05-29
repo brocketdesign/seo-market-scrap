@@ -54,7 +54,7 @@ app.use('/api/products', productRoutes); // Use product routes
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
 
-const PORT = process.env.BACKEND_PORT || 5001; // Changed from 5000 to 5001 to avoid conflicts
+const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
 app.listen(PORT, () => {
   console.log('='.repeat(50));
