@@ -80,11 +80,8 @@ app.use('/api/settings', settingsRoutes); // Use settings routes
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
 nextApp.prepare().then(() => {
-  // Default route handler for Next.js pages
-  // This should be after all your API routes
-  app.all('*', (req, res) => {
-    return handle(req, res);
-  });
+  // forward all non-API requests to Next.js
+  app.use((req, res) => handle(req, res));
 
   app.listen(PORT, (err) => {
     if (err) {

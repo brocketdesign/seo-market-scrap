@@ -35,6 +35,7 @@
   },
   "homepage": "https://github.com/brocketdesign/seo-market-scrap#readme",
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "next": "15.3.2"
   }
 }
