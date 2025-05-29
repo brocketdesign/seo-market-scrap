@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       'amazon.com',
       'thumbnail.image.rakuten.co.jp',
       'rakuten.co.jp',
+      'shop.r10s.jp'
     ],
     remotePatterns: [
       {

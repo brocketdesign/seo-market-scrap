@@ -51,7 +51,35 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (productData?.category) {
     keywords.push(productData.category);
   }
-  
+
+  if (productData?.source) {
+    keywords.push(productData.source);
+  }
+
+  // Add structured data for better SEO (Japanese)
+  const structuredData = productData ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": productData.title,
+    "description": productData.description,
+    "image": productData.images,
+    "brand": {
+      "@type": "Brand",
+      "name": productData.source === 'rakuten' ? '楽天' : productData.source === 'amazon' ? 'Amazon' : 'Unknown'
+    },
+    "aggregateRating": productData.ratings?.count > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": productData.ratings.score,
+      "reviewCount": productData.ratings.count
+    } : undefined,
+    "offers": productData.price ? {
+      "@type": "Offer",
+      "price": productData.price.replace(/[^0-9.]/g, ''),
+      "priceCurrency": productData.price.includes('¥') || productData.price.includes('円') ? 'JPY' : 'USD',
+      "availability": "https://schema.org/InStock"
+    } : undefined
+  } : null;
+
   return {
     title: `${productTitle} | SEO Product Aggregator`,
     description: productDescription,
@@ -61,7 +89,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: productDescription,
       type: 'website',
       images: productImages,
+      locale: 'ja_JP',
     },
+    other: structuredData ? {
+      'structured-data': JSON.stringify(structuredData)
+    } : undefined,
   };
 }
 

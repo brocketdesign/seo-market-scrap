@@ -55,6 +55,30 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     keywords.push(productData.source);
   }
 
+  // Add structured data for better SEO
+  const structuredData = productData ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": productData.title,
+    "description": productData.description,
+    "image": productData.images,
+    "brand": {
+      "@type": "Brand",
+      "name": productData.source === 'rakuten' ? 'Rakuten' : productData.source === 'amazon' ? 'Amazon' : 'Unknown'
+    },
+    "aggregateRating": productData.ratings?.count > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": productData.ratings.score,
+      "reviewCount": productData.ratings.count
+    } : undefined,
+    "offers": productData.price ? {
+      "@type": "Offer",
+      "price": productData.price.replace(/[^0-9.]/g, ''),
+      "priceCurrency": productData.price.includes('¥') || productData.price.includes('円') ? 'JPY' : 'USD',
+      "availability": "https://schema.org/InStock"
+    } : undefined
+  } : null;
+
   return {
     title: `${productTitle} | Product Details | SEO Product Aggregator`,
     description: productDescription,
@@ -65,6 +89,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       type: 'website',
       images: productImages,
     },
+    other: structuredData ? {
+      'structured-data': JSON.stringify(structuredData)
+    } : undefined,
   };
 }
 
