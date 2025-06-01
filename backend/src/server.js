@@ -35,11 +35,16 @@ app.use((req, res, next) => {
 
 // CORS middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow frontend to access the API
+  origin: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.FRONTEND_URL
+  ].filter(Boolean), // Remove any undefined values
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // Allow cookies to be sent with requests
+  credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // Init Middleware
 app.use(express.json({ extended: false }));
@@ -53,7 +58,7 @@ app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
 app.use('/api/products', productRoutes); // Use product routes
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
-const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
+const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
 
 app.listen(PORT, () => {
   console.log('='.repeat(50));

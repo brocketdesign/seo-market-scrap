@@ -21,8 +21,10 @@ export const authOptions: NextAuthOptions = {
         console.log('[NextAuth Authorize] Attempting to authorize user:', credentials.username);
 
         try {
-          const apiBaseUrl = process.env.API_URL || 'http://localhost:5000';
+          // Use NEXT_PUBLIC_API_URL for consistency, fallback to localhost:8000
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
           console.log('[NextAuth Authorize] Calling backend API:', `${apiBaseUrl}/api/admin/login`);
+          
           const res = await fetch(`${apiBaseUrl}/api/admin/login`, {
             method: 'POST',
             headers: {
