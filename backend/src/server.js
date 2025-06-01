@@ -53,7 +53,6 @@ app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
 app.use('/api/products', productRoutes); // Use product routes
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
-
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5001;
 
 app.listen(PORT, () => {
