@@ -49,7 +49,13 @@ app.use(cors({
 // Init Middleware
 app.use(express.json({ extended: false }));
 
-app.get('/', (req, res) => res.send('API Running'));
+// In production, serve static files from Next.js build
+if (process.env.NODE_ENV === 'production') {
+  // Serve Next.js static files
+  app.use('/_next', express.static(path.join(__dirname, '../../frontend/out/_next')));
+  app.use('/static', express.static(path.join(__dirname, '../../frontend/out')));
+  app.use(express.static(path.join(__dirname, '../../frontend/out')));
+}
 
 // Define Routes
 app.use('/api/admin', adminRoutes);
@@ -57,6 +63,22 @@ app.use('/api/scrape', scrapingRoutes); // Use scraping routes
 app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
 app.use('/api/products', productRoutes); // Use product routes
 app.use('/api/settings', settingsRoutes); // Use settings routes
+
+// In production, serve the built Next.js app
+if (process.env.NODE_ENV === 'production') {
+  // Handle all other routes by serving the index.html
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.url.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API route not found' });
+    }
+    
+    // Serve the Next.js exported index.html
+    res.sendFile(path.join(__dirname, '../../frontend/out/index.html'));
+  });
+} else {
+  app.get('/', (req, res) => res.send('API Running'));
+}
 
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
 

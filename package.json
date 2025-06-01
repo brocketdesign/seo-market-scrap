@@ -14,14 +14,14 @@
     "dev:backend-only": "cd backend && npm run dev",
     "start:backend": "npm start --prefix backend",
     "start:frontend": "npm start --prefix frontend",
-    "start": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"blue.bold,green.bold\" --prefix \"{name} | \" \"npm:start:backend\" \"npm:start:frontend\"",
+    "start": "node start-production.js",
     "start:backend-only": "cd backend && npm start",
     "install:backend": "npm install --prefix backend",
     "install:frontend": "npm install --prefix frontend",
     "install:all": "npm install && npm run install:backend && npm run install:frontend",
     "logs:backend": "cd backend && nodemon --quiet src/server.js | grep --color=always \"\\[BACKEND\\]\"",
-    "build:frontend": "cd frontend && npm run build",
-    "heroku-postbuild": "npm run install:backend"
+    "build:frontend": "cd frontend && NODE_ENV=production npm run build",
+    "heroku-postbuild": "npm run install:backend && npm run install:frontend && npm run build:frontend"
   },
   "repository": {
     "type": "git",
