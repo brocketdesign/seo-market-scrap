@@ -51,10 +51,30 @@ app.use(express.json({ extended: false }));
 
 // In production, serve static files from Next.js build
 if (process.env.NODE_ENV === 'production') {
-  // Serve Next.js static files
-  app.use('/_next', express.static(path.join(__dirname, '../../frontend/out/_next')));
-  app.use('/static', express.static(path.join(__dirname, '../../frontend/out')));
-  app.use(express.static(path.join(__dirname, '../../frontend/out')));
+  // Check both possible Next.js output directories (.next and out)
+  const nextJsOutputDir = path.join(__dirname, '../../frontend/.next');
+  const nextJsExportDir = path.join(__dirname, '../../frontend/out');
+  
+  try {
+    // Use fs to check which directory exists
+    const fs = require('fs');
+    
+    if (fs.existsSync(nextJsExportDir)) {
+      console.log('[BACKEND] Serving Next.js static export from: frontend/out');
+      app.use('/_next', express.static(path.join(nextJsExportDir, '_next')));
+      app.use('/static', express.static(nextJsExportDir));
+      app.use(express.static(nextJsExportDir));
+    } else if (fs.existsSync(nextJsOutputDir)) {
+      console.log('[BACKEND] Serving Next.js build from: frontend/.next');
+      app.use('/_next', express.static(path.join(nextJsOutputDir)));
+      app.use('/static', express.static(path.join(__dirname, '../../frontend/public')));
+      app.use(express.static(path.join(__dirname, '../../frontend/public')));
+    } else {
+      console.error('[BACKEND] ERROR: Next.js build directories not found!');
+    }
+  } catch (error) {
+    console.error('[BACKEND] Error setting up static file serving:', error);
+  }
 }
 
 // Define Routes
