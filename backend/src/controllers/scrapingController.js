@@ -54,21 +54,37 @@ const saveScrapedProduct = async (req, res) => {
       contentLanguage = 'english';
     }
     
-    const newProduct = new Product({
-      ...productData,
-      contentLanguage,
-      // Ensure all required fields from ProductSchema are present or have defaults
-      // category and tags might need to be derived or set manually later
-      category: productData.category || 'Uncategorized', 
-      tags: productData.tags || [],
-      // SEO fields can be auto-generated or set manually
-      seoTitle: productData.seoTitle || productData.title,
-      seoDescription: productData.seoDescription || productData.description.substring(0, 160),
-      seoKeywords: productData.seoKeywords || productData.title.split(' '),
-    });
-
-    const savedProduct = await newProduct.save();
-    res.status(201).json(savedProduct);
+    // Safety check for all string fields before processing
+    // This prevents substring errors on undefined values
+    const safeString = (str) => typeof str === 'string' ? str : '';
+    
+    // Sanitize product data before saving
+    const sanitizedProduct = {
+      title: safeString(productData.title),
+      description: safeString(productData.description),
+      price: safeString(productData.price),
+      source: safeString(productData.source),
+      sourceUrl: safeString(productData.sourceUrl),
+      category: safeString(productData.category),
+      contentLanguage: safeString(productData.contentLanguage || 'japanese'), // Default to japanese for Rakuten
+      tags: Array.isArray(productData.tags) ? productData.tags.map(safeString) : [],
+      images: Array.isArray(productData.images) ? productData.images.filter(img => typeof img === 'string') : [],
+      ratings: {
+        score: typeof productData.ratings?.score === 'number' ? productData.ratings.score : 0,
+        count: typeof productData.ratings?.count === 'number' ? productData.ratings.count : 0
+      },
+      reviews: Array.isArray(productData.reviews) ? productData.reviews.map(review => ({
+        author: safeString(review.author),
+        text: safeString(review.text),
+        rating: typeof review.rating === 'number' ? review.rating : 5
+      })) : []
+    };
+    
+    // Create a new product with the sanitized data
+    const product = new Product(sanitizedProduct);
+    await product.save();
+    
+    res.status(201).json(product);
 
   } catch (error) {
     console.error('Error saving product:', error);

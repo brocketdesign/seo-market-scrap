@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
     setError(null);
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/admin/dashboard`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`,

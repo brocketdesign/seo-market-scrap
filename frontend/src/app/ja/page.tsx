@@ -26,7 +26,7 @@ export default function JapaneseHomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         // Fetch only Japanese products
         const response = await fetch(`${apiBaseUrl}/api/products/public?limit=4&sort=featured&contentLanguage=japanese`);
         

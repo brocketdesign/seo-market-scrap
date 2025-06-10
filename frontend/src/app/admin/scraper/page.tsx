@@ -44,7 +44,7 @@ export default function ScraperPage() {
     }
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/scrape/manual`, { 
         method: 'POST',
         headers: {
@@ -93,7 +93,7 @@ export default function ScraperPage() {
     }
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/scrape/save`, { 
         method: 'POST',
         headers: {
@@ -141,7 +141,7 @@ export default function ScraperPage() {
     }
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       let successCount = 0;
       let failCount = 0;
       

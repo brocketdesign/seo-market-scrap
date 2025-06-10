@@ -41,7 +41,7 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
       setError(null);
       
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const response = await fetch(`${apiBaseUrl}/api/products/public/${productId}`);
         
         if (!response.ok) {

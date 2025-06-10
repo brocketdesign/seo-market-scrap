@@ -41,7 +41,7 @@ export default function SettingsPage() {
     setIsLoading(true);
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/admin/settings`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`,
@@ -84,7 +84,7 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' });
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/admin/settings`, {
         method: 'PUT',
         headers: {
@@ -122,7 +122,7 @@ export default function SettingsPage() {
     setMessage({ type: '', text: '' });
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/admin/cleanup`, {
         method: 'POST',
         headers: {

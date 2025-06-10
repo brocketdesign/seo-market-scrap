@@ -47,7 +47,7 @@ export default function SearchResults({ initialSearchTerm, initialTag, locale = 
     setError(null);
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const url = new URL(`${apiBaseUrl}/api/products/public`);
       
       // Add query parameters

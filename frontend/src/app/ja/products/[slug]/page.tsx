@@ -5,7 +5,7 @@ import ProductDetail from '../../../components/ProductDetail';
 // Server-side function to fetch product data for metadata
 async function getProductData(id: string) {
   try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:5000';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
     const res = await fetch(`${apiBaseUrl}/api/products/public/${id}`, { next: { revalidate: 3600 } });
     
     if (!res.ok) return null;
