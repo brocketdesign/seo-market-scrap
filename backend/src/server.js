@@ -60,14 +60,20 @@ if (process.env.NODE_ENV === 'production') {
     const fs = require('fs');
     
     if (fs.existsSync(nextJsExportDir)) {
-      console.log('[BACKEND] Serving Next.js static export from: frontend/out');
+      console.log('[BACKEND] Attempting to serve Next.js static export from: frontend/out');
+      console.log('[BACKEND] Registering static path: /_next');
       app.use('/_next', express.static(path.join(nextJsExportDir, '_next')));
+      console.log('[BACKEND] Registering static path: /static');
       app.use('/static', express.static(nextJsExportDir));
+      console.log('[BACKEND] Registering static path: /');
       app.use(express.static(nextJsExportDir));
     } else if (fs.existsSync(nextJsOutputDir)) {
-      console.log('[BACKEND] Serving Next.js build from: frontend/.next');
+      console.log('[BACKEND] Attempting to serve Next.js build from: frontend/.next');
+      console.log('[BACKEND] Registering static path: /_next');
       app.use('/_next', express.static(path.join(nextJsOutputDir)));
+      console.log('[BACKEND] Registering static path: /static for public dir');
       app.use('/static', express.static(path.join(__dirname, '../../frontend/public')));
+      console.log('[BACKEND] Registering static path: / for public dir');
       app.use(express.static(path.join(__dirname, '../../frontend/public')));
     } else {
       console.error('[BACKEND] ERROR: Next.js build directories not found!');
@@ -78,15 +84,21 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Define Routes
+console.log('[BACKEND] Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
+console.log('[BACKEND] Registering route: /api/scrape');
 app.use('/api/scrape', scrapingRoutes); // Use scraping routes
+console.log('[BACKEND] Registering route: /api/cron-jobs');
 app.use('/api/cron-jobs', cronJobRoutes); // Use cron job routes
+console.log('[BACKEND] Registering route: /api/products');
 app.use('/api/products', productRoutes); // Use product routes
+console.log('[BACKEND] Registering route: /api/settings');
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
 // In production, serve the built Next.js app
 if (process.env.NODE_ENV === 'production') {
   // Handle all other routes by serving the index.html
+  console.log('[BACKEND] Registering catch-all GET route: *');
   app.get('*', (req, res) => {
     // Skip API routes
     if (req.url.startsWith('/api/')) {
@@ -97,6 +109,7 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../../frontend/out/index.html'));
   });
 } else {
+  console.log('[BACKEND] Registering development GET route: /');
   app.get('/', (req, res) => res.send('API Running'));
 }
 
