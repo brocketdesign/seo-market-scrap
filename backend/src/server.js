@@ -98,8 +98,8 @@ app.use('/api/settings', settingsRoutes); // Use settings routes
 // In production, serve the built Next.js app
 if (process.env.NODE_ENV === 'production') {
   // Handle all other routes by serving the index.html
-  console.log('[BACKEND] Registering catch-all GET route: *');
-  app.get('*', (req, res) => {
+  console.log('[BACKEND] Registering catch-all GET route: /*');
+  app.get('/*', (req, res) => {
     // Skip API routes
     if (req.url.startsWith('/api/')) {
       return res.status(404).json({ message: 'API route not found' });
