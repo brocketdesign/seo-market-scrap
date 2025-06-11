@@ -13,6 +13,18 @@ import {
   Settings as SettingsType
 } from '@/lib/api/settingsApi';
 
+interface SettingsFormState {
+  scrapingInterval: string;
+  amazonApiKey: string;
+  rakutenApiKey: string;
+  emailNotifications: boolean;
+  notificationEmail: string;
+  userAgent: string;
+  proxyEnabled: boolean;
+  proxyUrl: string;
+  maxConcurrentJobs: number;
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);

@@ -25,7 +25,8 @@ const nextConfig = {
     trailingSlash: true,
     images: {
       unoptimized: true
-    }
+    },
+    output: 'standalone'
   }),
   webpack: (config) => {
     config.resolve.alias['@'] = path.join(__dirname, 'src');

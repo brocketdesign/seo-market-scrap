@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force this route to be dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * Image proxy route to bypass CORS and domain restrictions
  * This allows loading images from external domains that aren't in the Next.js image config

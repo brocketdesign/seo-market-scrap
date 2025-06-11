@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 interface SidebarItem {
   name: string;
   href: string;
-  icon: JSX.Element;
+  icon: React.ReactElement;
   current: boolean;
 }
 

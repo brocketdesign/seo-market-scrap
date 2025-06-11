@@ -215,7 +215,7 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
                     key={star}
                     xmlns="http://www.w3.org/2000/svg"
                     className={`h-5 w-5 ${
-                      star <= Math.floor(product?.ratings?.value) ? 'fill-current' : 'stroke-current fill-none'
+                      star <= Math.floor(product?.ratings?.value || 0) ? 'fill-current' : 'stroke-current fill-none'
                     }`}
                     viewBox="0 0 24 24"
                   >
