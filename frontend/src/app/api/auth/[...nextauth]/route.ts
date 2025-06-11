@@ -5,7 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 // The import of Session and JWT from next-auth/jwt might not be needed here if already declared globally
 // import '../../types/next-auth.d.ts'; 
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
