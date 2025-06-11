@@ -109,9 +109,13 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../../frontend/out/index.html'));
   });
   
-  // 404 handler for API routes
-  app.use('/api/*', (req, res) => {
-    res.status(404).json({ message: 'API route not found' });
+  // Simple 404 handler for unmatched routes (including API routes)
+  app.use((req, res) => {
+    if (req.url.startsWith('/api/')) {
+      res.status(404).json({ message: 'API route not found' });
+    } else {
+      res.status(404).send('Page not found');
+    }
   });
 } else {
   console.log('[BACKEND] Registering development GET route: /');
