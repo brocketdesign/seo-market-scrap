@@ -17,7 +17,7 @@
     "start": "node start-production.js",
     "start:backend-only": "cd backend && npm start",
     "install:backend": "npm install --prefix backend",
-    "install:frontend": "npm install --prefix frontend",
+    "install:frontend": "npm install --prefix frontend --include=dev",
     "install:all": "npm install && npm run install:backend && npm run install:frontend",
     "logs:backend": "cd backend && nodemon --quiet src/server.js | grep --color=always \"\\[BACKEND\\]\"",
     "build:frontend": "cd frontend && NODE_ENV=production npm run build",
