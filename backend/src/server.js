@@ -91,38 +91,33 @@ app.use('/api/settings', settingsRoutes); // Use settings routes
 
 // In production, serve the built Next.js app
 if (process.env.NODE_ENV === 'production') {
-  console.log('[BACKEND] Setting up Next.js handler for non-API routes');
+  // Handle all other routes by serving a simple HTML file
+  console.log('[BACKEND] Registering catch-all middleware for non-API routes');
+  const indexHtmlPath = path.join(__dirname, '../../frontend/public/index.html');
+  console.log(`[BACKEND] Will serve HTML from: ${indexHtmlPath}`);
   
-  // Import Next.js modules
-  const next = require('next');
-  const dev = process.env.NODE_ENV !== 'production';
-  
-  // Initialize the Next.js app
-  const nextApp = next({
-    dev,
-    dir: path.join(__dirname, '../../frontend')
+  app.use((req, res, next) => {
+    // Skip API routes - let them go to the 404 handler
+    if (req.url.startsWith('/api/')) {
+      return next();
+    }
+    
+    // Serve the simple HTML file for all other routes
+    const fs = require('fs');
+    if (fs.existsSync(indexHtmlPath)) {
+      res.sendFile(indexHtmlPath);
+    } else {
+      res.status(404).send('Application not found - frontend not properly built');
+    }
   });
   
-  const handle = nextApp.getRequestHandler();
-  
-  // Prepare the Next.js app and then set up the handler
-  nextApp.prepare().then(() => {
-    console.log('[BACKEND] Next.js app prepared successfully');
-    
-    // For API routes that don't match our defined routes, return 404
-    app.use('/api/*', (req, res) => {
+  // Simple 404 handler for unmatched routes (including API routes)
+  app.use((req, res) => {
+    if (req.url.startsWith('/api/')) {
       res.status(404).json({ message: 'API route not found' });
-    });
-    
-    // Let Next.js handle all other routes
-    app.all('*', (req, res) => {
-      console.log(`[BACKEND] Forwarding request to Next.js: ${req.method} ${req.url}`);
-      return handle(req, res);
-    });
-    
-    console.log('[BACKEND] Next.js request handler registered');
-  }).catch(err => {
-    console.error('[BACKEND] Error preparing Next.js app:', err);
+    } else {
+      res.status(404).send('Page not found');
+    }
   });
 } else {
   console.log('[BACKEND] Registering development GET route: /');
