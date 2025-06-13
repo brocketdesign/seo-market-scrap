@@ -32,7 +32,7 @@ export function useSession(): { data: Session | null; status: string } {
 // Mock signIn function
 export function signIn(provider?: string, options?: any) {
   console.log('Mock signIn called', { provider, options });
-  return Promise.resolve({ ok: true, error: null });
+  return Promise.resolve();
 }
 
 // Mock getCsrfToken function
@@ -55,5 +55,5 @@ export function getSession() {
 
 // Mock SessionProvider component
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  return React.createElement(React.Fragment, null, children);
+  return <>{children}</>;
 }
