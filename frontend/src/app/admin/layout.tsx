@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider } from "@/lib/auth/mock-auth";
 import { Inter } from "next/font/google";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 

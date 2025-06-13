@@ -51,32 +51,26 @@ app.use(express.json({ extended: false }));
 
 // In production, serve static files from Next.js build
 if (process.env.NODE_ENV === 'production') {
-  // Check both possible Next.js output directories (.next and out)
+  // Serve static files from Next.js .next/static directory
   const nextJsOutputDir = path.join(__dirname, '../../frontend/.next');
-  const nextJsExportDir = path.join(__dirname, '../../frontend/out');
+  const nextJsPublicDir = path.join(__dirname, '../../frontend/public');
   
   try {
-    // Use fs to check which directory exists
     const fs = require('fs');
     
-    if (fs.existsSync(nextJsExportDir)) {
-      console.log('[BACKEND] Attempting to serve Next.js static export from: frontend/out');
-      console.log('[BACKEND] Registering static path: /_next');
-      app.use('/_next', express.static(path.join(nextJsExportDir, '_next')));
-      console.log('[BACKEND] Registering static path: /static');
-      app.use('/static', express.static(nextJsExportDir));
-      console.log('[BACKEND] Registering static path: /');
-      app.use(express.static(nextJsExportDir));
-    } else if (fs.existsSync(nextJsOutputDir)) {
-      console.log('[BACKEND] Attempting to serve Next.js build from: frontend/.next');
-      console.log('[BACKEND] Registering static path: /_next');
-      app.use('/_next', express.static(path.join(nextJsOutputDir)));
-      console.log('[BACKEND] Registering static path: /static for public dir');
-      app.use('/static', express.static(path.join(__dirname, '../../frontend/public')));
-      console.log('[BACKEND] Registering static path: / for public dir');
-      app.use(express.static(path.join(__dirname, '../../frontend/public')));
+    if (fs.existsSync(nextJsOutputDir)) {
+      console.log('[BACKEND] Serving Next.js build from: frontend/.next');
+      console.log('[BACKEND] Registering static path: /_next/static');
+      app.use('/_next/static', express.static(path.join(nextJsOutputDir, 'static')));
+      
+      console.log('[BACKEND] Registering static path: /static (public)');
+      app.use('/static', express.static(nextJsPublicDir));
+      
+      console.log('[BACKEND] Registering static path: / (public)');
+      app.use(express.static(nextJsPublicDir));
     } else {
-      console.error('[BACKEND] ERROR: Next.js build directories not found!');
+      console.error('[BACKEND] ERROR: Next.js build directory not found!');
+      console.error('[BACKEND] Expected directory: frontend/.next');
     }
   } catch (error) {
     console.error('[BACKEND] Error setting up static file serving:', error);
@@ -97,16 +91,24 @@ app.use('/api/settings', settingsRoutes); // Use settings routes
 
 // In production, serve the built Next.js app
 if (process.env.NODE_ENV === 'production') {
-  // Handle all other routes by serving the index.html
+  // Handle all other routes by serving a simple HTML file
   console.log('[BACKEND] Registering catch-all middleware for non-API routes');
+  const indexHtmlPath = path.join(__dirname, '../../frontend/public/index.html');
+  console.log(`[BACKEND] Will serve HTML from: ${indexHtmlPath}`);
+  
   app.use((req, res, next) => {
     // Skip API routes - let them go to the 404 handler
     if (req.url.startsWith('/api/')) {
       return next();
     }
     
-    // Serve the Next.js exported index.html for all other routes
-    res.sendFile(path.join(__dirname, '../../frontend/out/index.html'));
+    // Serve the simple HTML file for all other routes
+    const fs = require('fs');
+    if (fs.existsSync(indexHtmlPath)) {
+      res.sendFile(indexHtmlPath);
+    } else {
+      res.status(404).send('Application not found - frontend not properly built');
+    }
   });
   
   // Simple 404 handler for unmatched routes (including API routes)

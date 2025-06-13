@@ -1,6 +1,6 @@
 'use client';
 
-import { signIn, getCsrfToken } from 'next-auth/react';
+import { signIn, getCsrfToken } from '@/lib/auth/mock-auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import type { Metadata } from 'next';

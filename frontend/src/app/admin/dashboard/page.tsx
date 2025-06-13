@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/mock-auth';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

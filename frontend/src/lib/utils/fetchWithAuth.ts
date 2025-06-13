@@ -1,4 +1,4 @@
-import { getSession } from 'next-auth/react';
+import { getSession } from '@/lib/auth/mock-auth';
 
 export interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
@@ -16,7 +16,7 @@ export async function fetchWithAuth(url: string, options: FetchOptions = {}): Pr
   
   if (!skipAuth) {
     try {
-      // Get the session from next-auth
+      // Get the session from mock auth
       const session = await getSession();
       
       // Add the authorization header if we have a token
