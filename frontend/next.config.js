@@ -22,12 +22,10 @@ const nextConfig = {
   },
   // For production deployment
   ...(process.env.NODE_ENV === 'production' && {
-    output: 'export',
     trailingSlash: true,
     images: {
       unoptimized: true
-    },
-    distDir: 'out'
+    }
   }),
   webpack: (config) => {
     config.resolve.alias['@'] = path.join(__dirname, 'src');
