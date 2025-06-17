@@ -6,6 +6,9 @@ const connectDB = require('./config/db');
 const { initializeScheduler } = require('./services/schedulerService');
 const { initializeCleanup } = require('./services/cleanupService');
 
+// Import Next.js
+const next = require('next');
+
 // Import routes
 const adminRoutes = require('./routes/adminRoutes');
 const scrapingRoutes = require('./routes/scrapingRoutes'); // Import scraping routes
@@ -49,6 +52,16 @@ app.use(cors({
 // Init Middleware
 app.use(express.json({ extended: false }));
 
+// Prepare Next.js app in production
+let nextApp, handle;
+if (process.env.NODE_ENV === 'production') {
+  nextApp = next({
+    dev: false,
+    dir: path.join(__dirname, '../../frontend'),
+  });
+  handle = nextApp.getRequestHandler();
+}
+
 // In production, serve static files from Next.js build
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from Next.js .next/static directory
@@ -89,52 +102,46 @@ app.use('/api/products', productRoutes); // Use product routes
 console.log('[BACKEND] Registering route: /api/settings');
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
-// In production, serve the built Next.js app
+// In production, handle all non-API routes with Next.js
 if (process.env.NODE_ENV === 'production') {
-  // Handle all other routes by serving a simple HTML file
-  console.log('[BACKEND] Registering catch-all middleware for non-API routes');
-  const indexHtmlPath = path.join(__dirname, '../../frontend/public/index.html');
-  console.log(`[BACKEND] Will serve HTML from: ${indexHtmlPath}`);
-  
-  app.use((req, res, next) => {
-    // Skip API routes - let them go to the 404 handler
-    if (req.url.startsWith('/api/')) {
-      return next();
-    }
-    
-    // Serve the simple HTML file for all other routes
-    const fs = require('fs');
-    if (fs.existsSync(indexHtmlPath)) {
-      res.sendFile(indexHtmlPath);
-    } else {
-      res.status(404).send('Application not found - frontend not properly built');
-    }
-  });
-  
-  // Simple 404 handler for unmatched routes (including API routes)
-  app.use((req, res) => {
-    if (req.url.startsWith('/api/')) {
-      res.status(404).json({ message: 'API route not found' });
-    } else {
-      res.status(404).send('Page not found');
-    }
+  // Prepare Next.js and then start the server
+  nextApp.prepare().then(() => {
+    // Catch-all handler for non-API routes
+    app.all('*', (req, res) => {
+      if (req.url.startsWith('/api/')) {
+        // Let API routes fall through to 404 handler below
+        return res.status(404).json({ message: 'API route not found' });
+      }
+      return handle(req, res);
+    });
+
+    // Start server after Next.js is ready
+    const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
+    app.listen(PORT, () => {
+      console.log('='.repeat(50));
+      console.log(`[BACKEND] Server started on port ${PORT}`);
+      console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log('='.repeat(50));
+      // Initialize the scheduler service
+      initializeScheduler();
+      // Initialize the cleanup service
+      initializeCleanup();
+    });
   });
 } else {
+  // Development mode
   console.log('[BACKEND] Registering development GET route: /');
   app.get('/', (req, res) => res.send('API Running'));
+
+  const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
+  app.listen(PORT, () => {
+    console.log('='.repeat(50));
+    console.log(`[BACKEND] Server started on port ${PORT}`);
+    console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('='.repeat(50));
+    // Initialize the scheduler service
+    initializeScheduler();
+    // Initialize the cleanup service
+    initializeCleanup();
+  });
 }
-
-const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log('='.repeat(50));
-  console.log(`[BACKEND] Server started on port ${PORT}`);
-  console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('='.repeat(50));
-  
-  // Initialize the scheduler service
-  initializeScheduler();
-  
-  // Initialize the cleanup service
-  initializeCleanup();
-});
