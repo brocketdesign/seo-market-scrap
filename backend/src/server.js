@@ -102,6 +102,8 @@ app.use('/api/products', productRoutes); // Use product routes
 console.log('[BACKEND] Registering route: /api/settings');
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
+console.log('[BACKEND] All API routes registered successfully');
+console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
 // In production, handle all non-API routes with Next.js
 if (process.env.NODE_ENV === 'production') {
   // Prepare Next.js and then start the server
