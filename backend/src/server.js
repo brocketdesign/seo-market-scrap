@@ -103,12 +103,15 @@ console.log('[BACKEND] Registering route: /api/settings');
 app.use('/api/settings', settingsRoutes); // Use settings routes
 
 console.log('[BACKEND] All API routes registered successfully');
-console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[BACKEND] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[BACKEND] process.env.PORT: ${process.env.PORT}`);
+console.log(`[BACKEND] About to start server on port: ${PORT}`);
 // In production, handle all non-API routes with Next.js
 if (process.env.NODE_ENV === 'production') {
   // Prepare Next.js and then start the server
   nextApp.prepare().then(() => {
     // Catch-all handler for non-API routes
+    console.log('[BACKEND] Next.js app prepared, starting server...');
     app.all('*', (req, res) => {
       if (req.url.startsWith('/api/')) {
         // Let API routes fall through to 404 handler below
@@ -120,9 +123,6 @@ if (process.env.NODE_ENV === 'production') {
     // Start server after Next.js is ready
     // Always use process.env.PORT in production (Heroku requirement)
     const PORT = process.env.PORT || 8000;
-    console.log(`[BACKEND] NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`[BACKEND] process.env.PORT: ${process.env.PORT}`);
-    console.log(`[BACKEND] About to start server on port: ${PORT}`);
     app.listen(PORT, () => {
       console.log('='.repeat(50));
       console.log(`[BACKEND] Server started on port ${PORT}`);
