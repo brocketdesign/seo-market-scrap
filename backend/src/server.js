@@ -109,6 +109,7 @@ console.log(`[BACKEND] About to start server on port: ${PORT}`);
 // In production, handle all non-API routes with Next.js
 if (process.env.NODE_ENV === 'production') {
   // Prepare Next.js and then start the server
+  console.log(`[BACKEND] Preparing Next.js app...`);
   nextApp.prepare().then(() => {
     // Catch-all handler for non-API routes
     console.log('[BACKEND] Next.js app prepared, starting server...');
