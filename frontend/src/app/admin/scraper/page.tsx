@@ -44,7 +44,7 @@ export default function ScraperPage() {
     }
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/scrape/manual`, { 
         method: 'POST',
         headers: {
@@ -93,7 +93,7 @@ export default function ScraperPage() {
     }
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/scrape/save`, { 
         method: 'POST',
         headers: {
@@ -141,7 +141,7 @@ export default function ScraperPage() {
     }
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       let successCount = 0;
       let failCount = 0;
       
@@ -457,7 +457,7 @@ export default function ScraperPage() {
                           className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                           </svg>
                           View Original
                         </a>

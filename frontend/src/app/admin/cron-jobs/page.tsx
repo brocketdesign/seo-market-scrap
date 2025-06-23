@@ -51,7 +51,7 @@ export default function CronJobsPage() {
     setError(null);
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/cron-jobs`, {
         method: 'GET',
         headers: {
@@ -94,7 +94,7 @@ export default function CronJobsPage() {
         throw new Error('URL is required for URL-type jobs');
       }
       
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/cron-jobs`, {
         method: 'POST',
         headers: {
@@ -137,7 +137,7 @@ export default function CronJobsPage() {
     setSuccess(null);
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/cron-jobs/${job._id}/toggle`, {
         method: 'PATCH',
         headers: {
@@ -171,7 +171,7 @@ export default function CronJobsPage() {
     setSuccess(null);
     
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/cron-jobs/${jobId}`, {
         method: 'DELETE',
         headers: {

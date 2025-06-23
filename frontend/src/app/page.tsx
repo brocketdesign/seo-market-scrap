@@ -29,7 +29,7 @@ export default async function HomePage() {
   // Async function to fetch the latest products
   async function getLatestProducts() {
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/products/public?sort=newest&limit=4`, { cache: 'no-store' });
       
       if (!response.ok) {

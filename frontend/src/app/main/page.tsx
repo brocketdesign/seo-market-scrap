@@ -22,7 +22,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
         const response = await fetch(`${apiBaseUrl}/api/products/public?limit=4&sort=featured`);
         
         if (!response.ok) {
