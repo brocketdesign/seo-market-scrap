@@ -105,7 +105,6 @@ app.use('/api/settings', settingsRoutes); // Use settings routes
 console.log('[BACKEND] All API routes registered successfully');
 console.log(`[BACKEND] NODE_ENV: ${process.env.NODE_ENV}`);
 console.log(`[BACKEND] process.env.PORT: ${process.env.PORT}`);
-console.log(`[BACKEND] About to start server on port: ${PORT}`);
 // In production, handle all non-API routes with Next.js
 if (process.env.NODE_ENV === 'production') {
   // Prepare Next.js and then start the server
