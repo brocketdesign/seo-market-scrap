@@ -16,7 +16,7 @@ heroku config:set JWT_SECRET="your_jwt_secret_here"
 heroku config:set JWT_EXPIRE="30d"
 
 # Frontend API URL (IMPORTANT: Set to empty string to avoid double /api/api)
-heroku config:set NEXT_PUBLIC_API_URL="localhost:${process.env.PORT}"
+heroku config:set NEXT_PUBLIC_API_URL=""
 
 # NextAuth Configuration
 heroku config:set NEXTAUTH_URL="https://your-app-name.herokuapp.com"
@@ -28,7 +28,7 @@ heroku config:set NODE_ENV="production"
 
 ### Important Notes
 
-1. **NEXT_PUBLIC_API_URL**: Must be set to `localhost:${process.env.PORT}` in production. The frontend code already appends `/api/...` to API calls, so setting this to `/api` would result in double `/api/api/...` URLs.
+1. **NEXT_PUBLIC_API_URL**: Must be set to an empty string `""` in production. The frontend code already appends `/api/...` to API calls, so setting this to `/api` would result in double `/api/api/...` URLs.
 
 2. **Build Process**: The `heroku-postbuild` script will automatically:
    - Install backend dependencies
@@ -54,6 +54,6 @@ heroku config:set NEXT_PUBLIC_API_URL=""
 
 ### Troubleshooting
 
-- If you see `/api/api/...` URLs in logs, check that `NEXT_PUBLIC_API_URL` is set to `localhost:${process.env.PORT}`
+- If you see `/api/api/...` URLs in logs, check that `NEXT_PUBLIC_API_URL` is set to empty string
 - If frontend doesn't load, check that the frontend build completed successfully in build logs
 - Use `heroku logs --tail` to monitor real-time logs during deployment

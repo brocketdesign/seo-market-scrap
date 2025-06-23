@@ -40,8 +40,7 @@ export default function ProductsPage() {
     setError(null);
     
     try {
-      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
-      console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       let url = `${apiBaseUrl}/api/products?page=${page}&limit=12`;
       
       if (searchQuery) {
@@ -94,7 +93,7 @@ export default function ProductsPage() {
     }
     
     try {
-      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/products/${id}`, {
         method: 'DELETE',
         headers: {

@@ -42,7 +42,7 @@ npm install
 # Create a .env.local file if it doesn't exist
 if [ ! -f .env.local ]; then
   echo "Creating default .env.local file..."
-  echo "NEXT_PUBLIC_API_URL=localhost:${process.env.PORT}" > .env.local
+  echo "NEXT_PUBLIC_API_URL=http://localhost:5001/api" > .env.local
   echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
   echo "NEXTAUTH_SECRET=your_nextauth_secret_here" >> .env.local
 fi

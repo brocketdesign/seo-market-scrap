@@ -36,7 +36,7 @@ export default function ClientTagResults({ tag }: ClientTagResultsProps) {
     setError(null);
     
     try {
-      const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const url = new URL(`${apiBaseUrl}/api/products/public`);
       
       // Add tag as query parameter
