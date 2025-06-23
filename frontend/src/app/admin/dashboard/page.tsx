@@ -81,6 +81,7 @@ export default function AdminDashboardPage() {
 
     try {
       const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
       const response = await fetch(`${apiBaseUrl}/api/admin/dashboard`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`,

@@ -6,6 +6,7 @@ import ProductDetail from '../../../components/ProductDetail';
 async function getProductData(id: string) {
   try {
     const apiBaseUrl = `localhost:${process.env.PORT}` || process.env.API_URL || 'http://localhost:8000';
+    console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
     const res = await fetch(`${apiBaseUrl}/api/products/public/${id}`, { next: { revalidate: 3600 } });
     
     if (!res.ok) return null;

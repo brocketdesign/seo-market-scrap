@@ -30,6 +30,7 @@ export default async function HomePage() {
   async function getLatestProducts() {
     try {
       const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
       const response = await fetch(`${apiBaseUrl}/api/products/public?sort=newest&limit=4`, { cache: 'no-store' });
       
       if (!response.ok) {

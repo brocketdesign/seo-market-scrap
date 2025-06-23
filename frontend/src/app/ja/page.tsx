@@ -27,6 +27,7 @@ export default function JapaneseHomePage() {
     const fetchProducts = async () => {
       try {
         const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+        console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
         // Fetch only Japanese products
         const response = await fetch(`${apiBaseUrl}/api/products/public?limit=4&sort=featured&contentLanguage=japanese`);
         

@@ -41,6 +41,7 @@ export default function ProductsPage() {
     
     try {
       const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
       let url = `${apiBaseUrl}/api/products?page=${page}&limit=12`;
       
       if (searchQuery) {

@@ -52,6 +52,7 @@ export default function CronJobsPage() {
     
     try {
       const apiBaseUrl = `localhost:${process.env.PORT}` || 'http://localhost:8000';
+      console.log('apiBaseUrl:', apiBaseUrl, 'process.env.PORT:', process.env.PORT);
       const response = await fetch(`${apiBaseUrl}/api/cron-jobs`, {
         method: 'GET',
         headers: {
