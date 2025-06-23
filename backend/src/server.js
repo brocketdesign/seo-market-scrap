@@ -81,32 +81,37 @@ console.log(`[BACKEND] process.env.PORT: ${process.env.PORT}`);
 if (process.env.NODE_ENV === 'production') {
   // Prepare Next.js and then start the server
   console.log(`[BACKEND] Preparing Next.js app...`);
-  nextApp.prepare().then(() => {
-    // Catch-all handler for non-API routes
-    console.log('[BACKEND] Next.js app prepared, starting server...');
-    app.all('*', (req, res) => {
-      if (req.url.startsWith('/api/')) {
-        // Let API routes fall through to 404 handler below
-        return res.status(404).json({ message: 'API route not found' });
-      }
-      return handle(req, res);
-    });
+  nextApp.prepare()
+    .then(() => {
+      // Catch-all handler for non-API routes
+      console.log('[BACKEND] Next.js app prepared, starting server...');
+      app.all('*', (req, res) => {
+        if (req.url.startsWith('/api/')) {
+          // Let API routes fall through to 404 handler below
+          return res.status(404).json({ message: 'API route not found' });
+        }
+        return handle(req, res);
+      });
 
-    // Start server after Next.js is ready
-    // Always use process.env.PORT in production (Heroku requirement)
-    const PORT = process.env.PORT || 8000;
-    console.log(`[BACKEND] Starting server on port ${PORT}...`);
-    app.listen(PORT, () => {
-      console.log('='.repeat(50));
-      console.log(`[BACKEND] Server started on port ${PORT}`);
-      console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log('='.repeat(50));
-      // Initialize the scheduler service
-      initializeScheduler();
-      // Initialize the cleanup service
-      initializeCleanup();
+      // Start server after Next.js is ready
+      // Always use process.env.PORT in production (Heroku requirement)
+      const PORT = process.env.PORT || 8000;
+      app.listen(PORT, () => {
+        console.log('='.repeat(50));
+        console.log(`[BACKEND] Server started on port ${PORT}`);
+        console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log('='.repeat(50));
+        console.log('🚀 Backend server started. It will serve the frontend build.');
+        // Initialize the scheduler service
+        initializeScheduler();
+        // Initialize the cleanup service
+        initializeCleanup();
+      });
+    })
+    .catch((err) => {
+      console.error('[BACKEND] Error preparing Next.js app:', err);
+      process.exit(1);
     });
-  });
 } else {
   // Development mode
   console.log('[BACKEND] Registering development GET route: /');
