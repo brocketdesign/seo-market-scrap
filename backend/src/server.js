@@ -60,7 +60,7 @@ if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../frontend/build');
   app.use(express.static(frontendPath));
 
-  app.get('*', (req, res) => {
+  app.get(/(.*)/, (req, res) => {
     res.sendFile(path.resolve(frontendPath, 'index.html'));
   });
 
@@ -70,50 +70,9 @@ if (process.env.NODE_ENV === 'production') {
   app.get('/', (req, res) => res.send('API Running'));
 }
 
-// Debug: Print all registered routes
-const printRoutes = (stack, prefix = '') => {
-  stack.forEach((layer, index) => {
-    if (layer.route) {
-      const methods = Object.keys(layer.route.methods)
-        .map(m => m.toUpperCase())
-        .join(', ');
-      console.log(`${methods.padEnd(10)} ${prefix}${layer.route.path}`);
-    } else if (layer.name === 'router' && layer.handle?.stack) {
-      const routePath = layer.regexp?.source
-        ?.replace('^\\', '/')
-        .replace('\\/?(?=\\/|$)', '')
-        .replace(/\\\//g, '/') || '';
-      printRoutes(layer.handle.stack, prefix + routePath);
-    } else {
-      console.log(`[DEBUG] Skipping layer ${index} - not a route or router`);
-    }
-  });
-};
-
 // Start server
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
 app.listen(PORT, () => {
-  console.log('='.repeat(50));
-  console.log(`[BACKEND] Server started on port ${PORT}`);
-  console.log(`[BACKEND] Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('='.repeat(50));
-  let routerStack = null;
-
-  if (app.router?.stack) {
-    routerStack = app.router.stack;
-    console.log('\n[DEBUG] Using app.router.stack to list routes');
-  } else if (app._router?.stack) {
-    routerStack = app._router.stack;
-    console.log('\n[DEBUG] Using app._router.stack to list routes');
-  }
-
-  if (routerStack) {
-    console.log('[DEBUG] Registered routes:');
-    printRoutes(routerStack);
-  } else {
-    console.warn('[DEBUG] No routes registered — app.router and app._router are both unavailable');
-  }
-
   // Start background services
   initializeScheduler();
   initializeCleanup();
