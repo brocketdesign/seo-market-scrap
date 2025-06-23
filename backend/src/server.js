@@ -31,49 +31,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware: CORS
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// --- Next.js integration ---
+const next = require('next');
+const dev = process.env.NODE_ENV !== 'production';
+// Point Next.js to the frontend directory
+const nextApp = next({ dev, dir: path.resolve(__dirname, '../../frontend') });
+const handle = nextApp.getRequestHandler();
 
-// Middleware: JSON parsing
-app.use(express.json({ extended: false }));
+nextApp.prepare().then(() => {
+  // Middleware: CORS
+  app.use(cors({
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      process.env.FRONTEND_URL
+    ].filter(Boolean),
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
 
-// API Routes
-console.log('[BACKEND] Registering API routes...');
-app.use('/api/admin', adminRoutes);
-app.use('/api/scrape', scrapingRoutes);
-app.use('/api/cron-jobs', cronJobRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/settings', settingsRoutes);
-console.log('[BACKEND] All API routes registered successfully');
+  // Middleware: JSON parsing
+  app.use(express.json({ extended: false }));
 
-// Serve frontend (production)
-if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../frontend/build');
-  app.use(express.static(frontendPath));
+  // API Routes
+  console.log('[BACKEND] Registering API routes...');
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/scrape', scrapingRoutes);
+  app.use('/api/cron-jobs', cronJobRoutes);
+  app.use('/api/products', productRoutes);
+  app.use('/api/settings', settingsRoutes);
+  console.log('[BACKEND] All API routes registered successfully');
 
-  app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.resolve(frontendPath, 'index.html'));
+  // Dev root route
+  if (dev) {
+    app.get('/', (req, res) => res.send('API Running'));
+  }
+
+  // Catch all other routes and send to Next.js handler
+  app.all(/(.*)/, (req, res) => {
+    return handle(req, res);
   });
 
-  console.log('[BACKEND] Serving frontend from /frontend/build');
-} else {
-  // Dev root route
-  app.get('/', (req, res) => res.send('API Running'));
-}
-
-// Start server
-const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
-app.listen(PORT, () => {
-  // Start background services
-  initializeScheduler();
-  initializeCleanup();
+  const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
+  app.listen(PORT, () => {
+    // Start background services
+    initializeScheduler();
+    initializeCleanup();
+    console.log(`[BACKEND] Server started on port ${PORT}`);
+  });
 });
