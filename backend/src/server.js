@@ -95,6 +95,7 @@ if (process.env.NODE_ENV === 'production') {
     // Start server after Next.js is ready
     // Always use process.env.PORT in production (Heroku requirement)
     const PORT = process.env.PORT || 8000;
+    console.log(`[BACKEND] Starting server on port ${PORT}...`);
     app.listen(PORT, () => {
       console.log('='.repeat(50));
       console.log(`[BACKEND] Server started on port ${PORT}`);
@@ -113,6 +114,7 @@ if (process.env.NODE_ENV === 'production') {
 
   // Use fallback only in development
   const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
+  console.log(`[BACKEND] Starting server on port ${PORT}...`);
   app.listen(PORT, () => {
     console.log('='.repeat(50));
     console.log(`[BACKEND] Server started on port ${PORT}`);
