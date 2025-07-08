@@ -44,6 +44,8 @@ nextApp.prepare().then(() => {
     origin: [
       'http://localhost:3000',
       'http://127.0.0.1:3000',
+      'https://www.rakurabu.com/',
+      'https://rakurabu.com',
       process.env.FRONTEND_URL
     ].filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
