@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/lib/auth/mock-auth';
+import { fetchWithAuth } from '@/lib/utils/fetchWithAuth';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
@@ -44,21 +45,15 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    if (session?.accessToken) {
-      fetchSettings();
-    }
-  }, [session]);
+    fetchSettings();
+  }, []);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/admin/settings`, {
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken}`,
-        },
-      });
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/admin/settings`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
@@ -97,11 +92,10 @@ export default function SettingsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/admin/settings`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/admin/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
         },
         body: JSON.stringify(settings),
       });
@@ -135,11 +129,8 @@ export default function SettingsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/admin/cleanup`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/admin/cleanup`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken}`,
-        },
       });
       
       if (!response.ok) {

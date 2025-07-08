@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/lib/auth/mock-auth';
+import { fetchWithAuth } from '@/lib/utils/fetchWithAuth';
 import { useState, FormEvent, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -45,11 +46,10 @@ export default function ScraperPage() {
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/scrape/manual`, { 
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/scrape/manual`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify({ keywordOrUrl: scrapeKeyword, source: scrapeSource }),
       });
@@ -94,11 +94,10 @@ export default function ScraperPage() {
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/scrape/save`, { 
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/scrape/save`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify(product),
       });
@@ -158,11 +157,10 @@ export default function ScraperPage() {
         }));
         
         try {
-          const response = await fetch(`${apiBaseUrl}/api/scrape/save`, { 
+          const response = await fetchWithAuth(`${apiBaseUrl}/api/scrape/save`, { 
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.accessToken}`,
             },
             body: JSON.stringify(product),
           });

@@ -1,7 +1,16 @@
-import { getSession } from '@/lib/auth/mock-auth';
-
 export interface FetchOptions extends RequestInit {
   skipAuth?: boolean;
+}
+
+/**
+ * Get token from cookie
+ */
+function getTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; token=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
 }
 
 /**
@@ -16,15 +25,15 @@ export async function fetchWithAuth(url: string, options: FetchOptions = {}): Pr
   
   if (!skipAuth) {
     try {
-      // Get the session from mock auth
-      const session = await getSession();
+      // Get the token from cookie
+      const token = getTokenFromCookie();
       
       // Add the authorization header if we have a token
-      if (session?.accessToken) {
-        headers.set('Authorization', `Bearer ${session.accessToken}`);
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
       }
     } catch (error) {
-      console.error('Error getting session:', error);
+      console.error('Error getting token:', error);
     }
   }
   

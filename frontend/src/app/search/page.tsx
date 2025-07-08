@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import SearchResults from '../components/SearchResults';
+import SearchResults from '../../components/SearchResults';
 
 // Helper function to generate dynamic metadata based on search query
 export async function generateMetadata({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }): Promise<Metadata> {

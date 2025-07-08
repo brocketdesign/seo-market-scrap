@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/lib/auth/mock-auth';
+import { fetchWithAuth } from '@/lib/utils/fetchWithAuth';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -70,42 +71,48 @@ export default function AdminDashboardPage() {
   });
 
   useEffect(() => {
-    if (session?.accessToken) {
-      fetchDashboardData();
-    }
-  }, [session]);
+    // Always try to fetch dashboard data when component mounts
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
+    console.log('[Dashboard] Starting to fetch dashboard data...');
     setIsLoading(true);
     setError(null);
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/admin/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken}`,
-        },
-      });
+      console.log('[Dashboard] API Base URL:', apiBaseUrl);
+      console.log('[Dashboard] Making request to:', `${apiBaseUrl}/api/admin/dashboard`);
+      
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/admin/dashboard`);
+      console.log('[Dashboard] Response status:', response.status);
+      console.log('[Dashboard] Response ok:', response.ok);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        const errorText = await response.text();
+        console.log('[Dashboard] Error response text:', errorText);
+        throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('[Dashboard] Received data:', data);
       
       // Update stats with real data
       if (data.cronJobs) {
+        console.log('[Dashboard] Setting cron job stats:', data.cronJobs);
         setCronJobStats(data.cronJobs);
       }
       
       if (data.products) {
+        console.log('[Dashboard] Setting product stats:', data.products);
         setProductStats(data.products);
       }
       
-      console.log('Dashboard data loaded:', data);
+      console.log('[Dashboard] Dashboard data loaded successfully');
     } catch (err: any) {
+      console.error('[Dashboard] Error fetching dashboard data:', err);
       setError(err.message || 'An error occurred while fetching dashboard data');
-      console.error('Dashboard data fetch error:', err);
     } finally {
       setIsLoading(false);
     }

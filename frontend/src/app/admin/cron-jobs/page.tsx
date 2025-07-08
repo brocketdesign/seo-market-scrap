@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/lib/auth/mock-auth';
+import { fetchWithAuth } from '@/lib/utils/fetchWithAuth';
 import { useState, FormEvent, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -41,10 +42,8 @@ export default function CronJobsPage() {
   
   // Fetch cron jobs on load
   useEffect(() => {
-    if (session?.accessToken) {
-      fetchCronJobs();
-    }
-  }, [session]);
+    fetchCronJobs();
+  }, []);
   
   const fetchCronJobs = async () => {
     setIsLoading(true);
@@ -52,11 +51,10 @@ export default function CronJobsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/cron-jobs`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/cron-jobs`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
         },
       });
       
@@ -95,11 +93,10 @@ export default function CronJobsPage() {
       }
       
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/cron-jobs`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/cron-jobs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
         },
         body: JSON.stringify(newJob),
       });
@@ -138,11 +135,10 @@ export default function CronJobsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/cron-jobs/${job._id}/toggle`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/cron-jobs/${job._id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
         },
       });
       
@@ -172,11 +168,10 @@ export default function CronJobsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/cron-jobs/${jobId}`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/cron-jobs/${jobId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`,
         },
       });
       

@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/lib/auth/mock-auth';
+import { fetchWithAuth } from '@/lib/utils/fetchWithAuth';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -55,11 +56,7 @@ export default function ProductsPage() {
         url += `&source=${encodeURIComponent(filterSource)}`;
       }
       
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.accessToken}`,
-        },
-      });
+      const response = await fetchWithAuth(url);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -75,7 +72,7 @@ export default function ProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [session, page, searchQuery, sortBy, filterSource]);
+  }, [page, searchQuery, sortBy, filterSource]);
   
   useEffect(() => {
     fetchProducts();
@@ -94,11 +91,8 @@ export default function ProductsPage() {
     
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/products/${id}`, {
+      const response = await fetchWithAuth(`${apiBaseUrl}/api/products/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken}`,
-        },
       });
       
       if (!response.ok) {

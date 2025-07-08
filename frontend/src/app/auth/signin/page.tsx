@@ -1,6 +1,6 @@
 'use client';
 
-import { signIn, getCsrfToken } from '@/lib/auth/mock-auth';
+import { getCsrfToken } from '@/lib/auth/mock-auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import type { Metadata } from 'next';
@@ -28,22 +28,36 @@ function SignInForm() {
     fetchCsrfToken();
   }, []);
 
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    const result = await signIn('credentials', {
-      redirect: false, // Handle redirect manually after checking result
-      username,
-      password,
-      callbackUrl: callbackUrl, // Pass the original callbackUrl
-    });
-
-    if (result?.ok) {
-      router.push(callbackUrl); // Redirect to admin dashboard or original requested page
+    let result: { ok: boolean; error: string | null } = { ok: false, error: null };
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Store token in cookie for middleware (or localStorage if needed)
+        document.cookie = `token=${data.token}; path=/;`;
+        result = { ok: true, error: null };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        result = { ok: false, error: errData.message || 'CredentialsSignin' };
+      }
+    } catch (err) {
+      result = { ok: false, error: 'CredentialsSignin' };
+    }
+    if (result.ok) {
+      router.push(callbackUrl);
     } else {
-      // Handle errors (e.g., display error message)
-      // The error type is already in the URL query param from NextAuth, handled by the 'error' state
-      router.push(`/auth/signin?error=${result?.error || 'CredentialsSignin'}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      router.push(`/auth/signin?error=${result.error || 'CredentialsSignin'}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
     setLoading(false);
   };

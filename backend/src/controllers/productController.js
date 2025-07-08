@@ -4,7 +4,14 @@ const Product = require('../models/Product');
 // @route   GET /api/products
 // @access  Private (Admin only)
 const getProducts = async (req, res) => {
+  console.log('[ProductController] getProducts called with query:', req.query);
+  
   try {
+    // Prevent caching
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -52,14 +59,23 @@ const getProducts = async (req, res) => {
     const totalProducts = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProducts / limit);
     
-    res.json({
+    const responseData = {
       products,
       totalProducts,
       totalPages,
       currentPage: page,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1
+    };
+    
+    console.log('[ProductController] Sending response with:', {
+      productsCount: products.length,
+      totalProducts,
+      currentPage: page,
+      totalPages
     });
+    
+    res.json(responseData);
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Server error while fetching products.' });

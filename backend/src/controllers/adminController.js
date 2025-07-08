@@ -9,6 +9,9 @@ const loginAdmin = async (req, res) => {
   console.log('[AdminController] Attempting loginAdmin...');
   console.log('[AdminController] Request body:', req.body);
   console.log('[AdminController] Request headers:', req.headers);
+  console.log('[AdminController] process.env.MONGODB_URI:', process.env.MONGODB_URI);
+  console.log('[AdminController] process.env.MONGODB_NAME:', process.env.MONGODB_NAME);
+  console.log('[AdminController] mongoose.connection.readyState:', require('mongoose').connection.readyState);
 
   const { username, password } = req.body;
 
@@ -18,9 +21,14 @@ const loginAdmin = async (req, res) => {
   }
 
   try {
+
     console.log(`[AdminController] Searching for user: ${username.toLowerCase()}`);
+    // Log all users for debug
+    const allUsers = await AdminUser.find({});
+    console.log('[AdminController] All users in DB:', allUsers.map(u => u.username));
     // Check for user
     const user = await AdminUser.findOne({ username: username.toLowerCase() });
+    console.log('[AdminController] User found by findOne:', user);
 
     if (!user) {
       console.log(`[AdminController] User "${username.toLowerCase()}" not found in database.`);

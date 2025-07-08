@@ -5,9 +5,19 @@ const CronJob = require('../models/CronJob');
 // @route   GET /api/admin/dashboard
 // @access  Private (Admin only)
 const getDashboardStats = async (req, res) => {
+  console.log('[DashboardController] getDashboardStats called');
+  
   try {
+    // Prevent caching
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
+    console.log('[DashboardController] Fetching product stats...');
     // Get product stats
     const totalProducts = await Product.countDocuments();
+    console.log('[DashboardController] Total products:', totalProducts);
+    
     const amazonProducts = await Product.countDocuments({ source: 'amazon' });
     const rakutenProducts = await Product.countDocuments({ source: 'rakuten' });
     const otherProducts = totalProducts - amazonProducts - rakutenProducts;
@@ -23,6 +33,9 @@ const getDashboardStats = async (req, res) => {
       .limit(5)
       .select('title source scrapedAt images');
     
+    console.log('[DashboardController] Recent products count:', recentProducts.length);
+    
+    console.log('[DashboardController] Fetching cron job stats...');
     // Get cron job stats
     const totalJobs = await CronJob.countDocuments();
     const activeJobs = await CronJob.countDocuments({ isActive: true });
@@ -45,7 +58,7 @@ const getDashboardStats = async (req, res) => {
       .sort({ lastRunAt: -1 })
       .limit(5);
     
-    res.json({
+    const responseData = {
       products: {
         total: totalProducts,
         amazon: amazonProducts,
@@ -62,7 +75,15 @@ const getDashboardStats = async (req, res) => {
         upcomingJobs,
         recentJobs
       }
+    };
+    
+    console.log('[DashboardController] Sending response with data:', {
+      productsTotal: responseData.products.total,
+      recentProductsCount: responseData.products.recentProducts.length,
+      cronJobsTotal: responseData.cronJobs.total
     });
+    
+    res.json(responseData);
     
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
