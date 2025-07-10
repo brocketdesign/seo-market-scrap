@@ -46,6 +46,9 @@ nextApp.prepare().then(() => {
       'http://127.0.0.1:3000',
       'https://www.rakurabu.com/',
       'https://rakurabu.com',
+      'https://www.rakurabu.com/ja/',
+      'https://rakurabu.com/ja/',
+      'https://seo-market-scraper-302575e6832d.herokuapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
