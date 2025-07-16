@@ -63,16 +63,34 @@ export const dictionaries = {
     search: '商品検索',
     electronics: '電子機器',
     books: '本',
+    categories: 'カテゴリー',
+    ranking: 'ランキング',
+    saleInfo: 'セール情報',
     
     // Homepage
-    heroTitle: '次のお気に入り商品を見つけよう',
-    heroSubtitle: '主要なオンラインマーケットプレイスから最高の商品を集約し、発見、比較、選択を簡単にします。',
+    heroTitle: '大手通販サイトのあらゆる商品の価格を比較、最安値を検索！',
+    heroSubtitle: 'まずはお好きなキーワードや商品名を入力して探してみましょう',
     startSearching: '今すぐ検索を開始',
-    featuredProducts: 'おすすめ商品',
-    viewAllFeatured: 'すべてのおすすめ商品を見る',
-    popularCategories: '人気カテゴリー',
-    whyChooseUs: '私たちを選ぶ理由',
+    featuredProducts: '人気ランキング（カテゴリー別）',
+    viewAllFeatured: 'カテゴリー別ランキングを見る',
+    popularCategories: 'カテゴリーから探す',
+    popularKeywords: '人気キーワードから探す',
+    whyChooseUs: 'なぜ私たちのサービスを選ぶのか？',
     whyChooseUsText: 'AmazonやRakutenの膨大なオンラインマーケットプレイスをナビゲートするのは圧倒的かもしれません。私たちのプラットフォームは、トップ評価の商品をキュレーションし、詳細な比較を提供し、最高のお得な情報をハイライトすることで、あなたのショッピング体験を簡素化します。',
+    
+    // Search related
+    searchPlaceholder: '商品名やキーワードを入力',
+    searchButton: '検索',
+    
+    // Store names
+    amazon: 'Amazon',
+    rakuten: '楽天市場',
+    yahoo: 'Yahoo!ショッピング',
+    
+    // Product related
+    position: '位',
+    price: '価格',
+    rating: '評価',
     
     // Search
     searchTitle: '商品を検索',
@@ -86,7 +104,6 @@ export const dictionaries = {
     
     // Product
     viewOriginal: '元のページを見る',
-    price: '価格',
     category: 'カテゴリ',
     source: 'ソース',
     tags: 'タグ',

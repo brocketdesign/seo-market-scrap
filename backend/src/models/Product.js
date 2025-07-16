@@ -22,17 +22,24 @@ const ProductSchema = new Schema({
   ],
   ratings: {
     // Aggregate rating value, e.g., 4.5
-    value: { type: Number, min: 0, max: 5 },
+    score: { type: Number, min: 0, max: 5, default: 0 },
     count: { type: Number, default: 0 }, // Number of reviews/ratings
   },
-  reviews: [
-    {
-      text: String,
-      author: String,
-      rating: Number,
-      date: Date,
-    },
-  ], // Could be a sample or link to reviews
+  // Store shop/seller information
+  shop: {
+    type: String,
+    trim: true,
+  },
+  // Store shipping info
+  shipping: {
+    type: String,
+    trim: true,
+  },
+  // Store points information
+  points: {
+    type: String,
+    trim: true,
+  },
   source: {
     type: String, // e.g., 'Amazon', 'Rakuten'
     required: true,
@@ -80,7 +87,7 @@ const ProductSchema = new Schema({
   contentLanguage: {
     type: String,
     trim: true,
-    default: 'english',
+    default: 'japanese', // Default to Japanese for Rakuten
   },
   // You might want to add fields for stock status, variations, etc.
 });

@@ -135,12 +135,17 @@ export default function AdminSidebar() {
               <p className="text-sm font-medium truncate">
                 {session.user?.name || 'Admin User'}
               </p>
-              <Link 
-                href="/api/auth/signout" 
-                className="text-xs text-indigo-300 hover:text-white"
+              <button 
+                onClick={() => {
+                  // Clear the token cookie
+                  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                  // Redirect to signin page
+                  window.location.href = '/auth/signin';
+                }}
+                className="text-xs text-indigo-300 hover:text-white cursor-pointer"
               >
                 Sign out
-              </Link>
+              </button>
             </div>
           </div>
         </div>
