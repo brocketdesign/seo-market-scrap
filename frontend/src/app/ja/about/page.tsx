@@ -8,14 +8,14 @@ export default function AboutPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
-            価格比較.jpについて
+            Rakurabu.comについて
           </h1>
           
           <div className="prose prose-lg max-w-none">
             <section className="mb-12">
               <h2 className="text-2xl font-semibold mb-6 text-gray-800">私たちのサービス</h2>
               <p className="text-gray-700 mb-4">
-                価格比較.jpは、日本の主要オンラインショッピングサイトの商品情報を一箇所で検索・比較できるサービスです。
+                Rakurabu.comは、日本の主要オンラインショッピングサイトの商品情報を一箇所で検索・比較できるサービスです。
                 Amazon、楽天市場、Yahoo!ショッピングなどの大手通販サイトから商品データを収集し、
                 最安値情報やお得な商品を簡単に見つけることができます。
               </p>
@@ -96,7 +96,7 @@ export default function AboutPage() {
               </p>
               <div className="bg-blue-50 p-6 rounded-lg">
                 <p className="text-blue-800 font-medium">お問い合わせ先</p>
-                <p className="text-blue-700">Email: support@kakaku-hikaku.jp</p>
+                <p className="text-blue-700">Email: support@rakurabu.com</p>
                 <p className="text-blue-700 text-sm mt-2">
                   ※お返事までに数日いただく場合がございます。予めご了承ください。
                 </p>

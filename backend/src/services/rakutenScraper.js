@@ -36,14 +36,9 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
   // Launch browser with enhanced config
   let browser;
   try {
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Launching browser with enhanced config:`, enhancedBrowserConfig);
     browser = await puppeteer.launch(enhancedBrowserConfig);
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Browser launched successfully.`);
   } catch (error) {
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][scrapeRakuten] Failed to launch with custom config, trying default: ${error.message}`);
-    // Fallback to basic configuration
     try {
-      console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Launching browser with default config.`);
       browser = await puppeteer.launch({
         headless: browserConfig.headless !== false,
         args: [
@@ -53,7 +48,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
           '--lang=ja-JP'
         ]
       });
-      console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Browser launched successfully with default config.`);
     } catch (err) {
       console.error(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Failed to launch browser with default config:', err.message`);
       throw err; // Re-throw the error to prevent further execution
@@ -62,7 +56,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
   
   try {
     const page = await browser.newPage();
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] New page created.`);
     
     // Set viewport and user agent
     await page.setViewport({
@@ -70,16 +63,13 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
       height: 768,
       deviceScaleFactor: 1,
     });
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Viewport set.`);
     
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36');
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] User agent set.`);
     
     // Set language preferences for Japanese content
     await page.setExtraHTTPHeaders({
       'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8'
     });
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] HTTP headers set.`);
 
     const isUrl = keywordOrUrl.startsWith('http://') || keywordOrUrl.startsWith('https://');
     
@@ -100,7 +90,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
     console.log(`[SCRAPER v${SCRAPER_VERSION}] scrapeRakuten - Navigating to search URL: ${searchUrl}`);
     try {
       await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-      console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Navigated to URL: ${searchUrl}`);
     } catch (gotoError) {
       console.error(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Error navigating to URL: ${searchUrl}`, gotoError.message);
       throw gotoError;
@@ -108,17 +97,14 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
     
     // Wait for search results to load - try multiple selectors
     try {
-      console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Waiting for search results selectors.`);
       await page.waitForSelector('.searchresultitem, .dui-card', { timeout: 15000 })
-        .then(() => console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Search results selectors found.`))
-        .catch(() => console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Search results selectors not found, proceeding anyway`));
+        .catch(() => {});
     } catch (waitError) {
       console.warn(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Error waiting for selectors:', waitError.message`);
     }
     
     // Add a small delay to ensure content is fully loaded
     await new Promise(resolve => setTimeout(resolve, 3000));
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Delay completed.`);
     
     // Extract product information from search results
     let products = [];
@@ -135,7 +121,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
           if (index > 20) return; // Limit to first 5 products
 
           try {
-            console.log(`[page.evaluate v${version}] Processing container ${index}`);
             
             // Look for title/link - prioritize elements with "item" in the href
             let titleElement = container.querySelector('a[href*="item.rakuten.co.jp"] h2') ||
@@ -146,7 +131,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
                                container.querySelector('.title a');
             
             if (!titleElement) {
-              console.log(`[page.evaluate v${version}] No title element found for container ${index}`);
               return;
             }
             
@@ -154,7 +138,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
             const title = titleElement.textContent.trim() || titleElement.title || '';
             
             if (!title) {
-              console.log(`[page.evaluate v${version}] No title text found for container ${index}`);
               return;
             }
             
@@ -288,7 +271,7 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
     console.log(`[SCRAPER v${SCRAPER_VERSION}] scrapeRakuten - Found ${products.length} products from search results`);
     
     await browser.close();
-    console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Browser closed.`);
+    
     return products;
     
   } catch (error) {
@@ -296,7 +279,6 @@ async function scrapeRakuten(keywordOrUrl, browserConfig) {
     
     try {
       await browser.close();
-      console.log(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Browser closed after error.`);
     } catch (closeError) {
       console.error(`[SCRAPER v${SCRAPER_VERSION}][DEBUG][scrapeRakuten] Error closing browser: ${closeError.message}`);
     }
