@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const { scrapeProductData } = require('../services/scraperService');
+const { categorizeProduct } = require('../services/openaiService');
 
 // @desc    Manually scrape products based on keyword/URL and source
 // @route   POST /api/scrape/manual
@@ -18,9 +19,21 @@ const manualScrape = async (req, res) => {
       return res.status(404).json({ message: 'No products found for the given criteria.' });
     }
 
+    // Filter out products that already exist in the database
+    const newProducts = [];
+    for (const product of scrapedProducts) {
+      const existingProduct = await Product.findOne({ sourceUrl: product.sourceUrl, source: product.source });
+      if (!existingProduct) {
+        newProducts.push(product);
+      }
+    }
+
+    if (newProducts.length === 0) {
+      return res.status(404).json({ message: 'No new products found for the given criteria.' });
+    }
+
     // For now, just return the scraped data. 
-    // Later, you might want to add a step to preview and then save.
-    res.json(scrapedProducts);
+    res.json(newProducts);
 
   } catch (error) {
     console.error('Scraping error:', error);
@@ -65,9 +78,9 @@ const saveScrapedProduct = async (req, res) => {
       price: safeString(productData.price),
       source: safeString(productData.source),
       sourceUrl: safeString(productData.sourceUrl),
-      category: safeString(productData.category),
+      category: 'General', // Default category
+      tags: [], // Default tags
       contentLanguage: safeString(productData.contentLanguage || 'japanese'), // Default to japanese for Rakuten
-      tags: Array.isArray(productData.tags) ? productData.tags.map(safeString) : [],
       images: Array.isArray(productData.images) ? productData.images.filter(img => typeof img === 'string') : [],
       ratings: {
         score: typeof productData.ratings?.score === 'number' ? productData.ratings.score : 0,
@@ -79,6 +92,18 @@ const saveScrapedProduct = async (req, res) => {
         rating: typeof review.rating === 'number' ? review.rating : 5
       })) : []
     };
+
+    // Categorize product using OpenAI
+    try {
+      const { category, tags } = await categorizeProduct(productData.title);
+      sanitizedProduct.category = category;
+      sanitizedProduct.tags = tags;
+    } catch (error) {
+      console.error(`Error categorizing product: ${error.message}`);
+      // Optionally, handle the error or set default values
+      sanitizedProduct.category = '総合';
+      sanitizedProduct.tags = [];
+    }
     
     // Create a new product with the sanitized data
     const product = new Product(sanitizedProduct);

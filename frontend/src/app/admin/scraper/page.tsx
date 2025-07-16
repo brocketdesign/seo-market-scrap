@@ -22,7 +22,7 @@ interface ScrapedProduct {
 export default function ScraperPage() {
   const { data: session } = useSession();
   const [scrapeKeyword, setScrapeKeyword] = useState('');
-  const [scrapeSource, setScrapeSource] = useState('amazon');
+  const [scrapeSource, setScrapeSource] = useState('rakuten');
   const [scrapedProducts, setScrapedProducts] = useState<ScrapedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,8 +276,8 @@ export default function ScraperPage() {
                     onChange={(e) => setScrapeSource(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   >
-                    <option value="amazon">Amazon</option>
                     <option value="rakuten">Rakuten</option>
+                    <option value="amazon">Amazon</option>
                     <option value="all">Both Sources</option>
                   </select>
                 </div>

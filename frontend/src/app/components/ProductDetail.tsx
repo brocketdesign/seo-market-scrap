@@ -19,7 +19,7 @@ interface ProductDetail {
   reviews?: { user: string; text: string; rating: number; date: string }[];
   scrapedAt: string;
   lastUpdatedAt?: string;
-  language?: string;
+  contentLanguage?: string;
 }
 
 interface ProductDetailProps {
@@ -31,6 +31,8 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [similarProducts, setSimilarProducts] = useState<ProductDetail[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   const dict = getDictionary(locale);
   const basePath = locale === 'ja' ? '/ja' : '';
@@ -39,15 +41,12 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
     const fetchProduct = async () => {
       setLoading(true);
       setError(null);
-      
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const response = await fetch(`${apiBaseUrl}/api/products/public/${productId}`);
-        
         if (!response.ok) {
           throw new Error('Failed to fetch product details');
         }
-        
         const data = await response.json();
         setProduct(data);
       } catch (err: any) {
@@ -57,11 +56,42 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
         setLoading(false);
       }
     };
-
     if (productId) {
       fetchProduct();
     }
   }, [productId]);
+
+  // Fetch similar products when product is loaded
+  useEffect(() => {
+    const fetchSimilarProducts = async () => {
+      if (!product || !product.category) {
+        setSimilarProducts([]);
+        return;
+      }
+      setSimilarLoading(true);
+      try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${apiBaseUrl}/api/products/public?category=${encodeURIComponent(product.category)}&limit=10`);
+        if (!res.ok) {
+          setSimilarProducts([]);
+          return;
+        }
+        const data = await res.json();
+        // Exclude the current product from the similar list
+        const filtered = Array.isArray(data)
+          ? data.filter((p: ProductDetail) => p._id !== product._id).slice(0, 10)
+          : [];
+        setSimilarProducts(filtered);
+      } catch (err) {
+        setSimilarProducts([]);
+      } finally {
+        setSimilarLoading(false);
+      }
+    };
+    if (product && product.category) {
+      fetchSimilarProducts();
+    }
+  }, [product]);
 
   // Format the date
   const formatDate = (dateString: string) => {
@@ -280,10 +310,43 @@ export default function ProductDetail({ productId, locale = 'en' }: ProductDetai
           <div className="text-xs text-gray-500">
             <p>{dict.addedOn}: {formatDate(product.scrapedAt)}</p>
             {product.lastUpdatedAt && <p>{dict.lastUpdated}: {formatDate(product.lastUpdatedAt)}</p>}
-            {product.language && <p>{dict.language}: {product.language.toUpperCase()}</p>}
+            {product.contentLanguage && <p>{dict.language}: {product.contentLanguage.toUpperCase()}</p>}
           </div>
         </div>
       </div>
+
+      {/* Similar Products Section */}
+      {product.category && (
+        <div className="mt-12 border-t border-gray-200 pt-8">
+          <h2 className="text-2xl font-semibold mb-6">{locale === 'ja' ? '関連商品' : 'Similar Products'}</h2>
+          {similarLoading ? (
+            <div className="text-gray-500">{locale === 'ja' ? '読み込み中...' : 'Loading...'}</div>
+          ) : similarProducts.length === 0 ? (
+            <div className="text-gray-500">{locale === 'ja' ? '関連商品が見つかりませんでした。' : 'No similar products found.'}</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {similarProducts.map((sp) => (
+                <Link
+                  key={sp._id}
+                  href={`${basePath}/products/${sp._id}`}
+                  className="block bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 border border-gray-100"
+                >
+                  <div className="aspect-w-1 aspect-h-1 mb-2">
+                    <img
+                      src={sp.images && sp.images.length > 0 ? sp.images[0] : '/placeholder-product.svg'}
+                      alt={sp.title}
+                      className="object-cover w-full h-32 rounded-md"
+                    />
+                  </div>
+                  <div className="font-semibold text-gray-800 truncate">{sp.title}</div>
+                  <div className="text-indigo-600 font-bold mt-1">{sp.price}</div>
+                  <div className="text-xs text-gray-500 mt-1">{sp.source}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Reviews Section - If available */}
       {product.reviews && product.reviews.length > 0 && (

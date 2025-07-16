@@ -233,7 +233,6 @@ const getPublicProducts = async (req, res) => {
     const skip = (page - 1) * limit;
     
     // Build filter object for public products 
-    // We're making sure we only return products that should be visible
     const filter = {};
     
     if (req.query.search) {
@@ -249,9 +248,13 @@ const getPublicProducts = async (req, res) => {
     }
 
     if (req.query.tag) {
-      filter.tags = req.query.tag;
+      // Match either tags array or category field
+      filter.$or = [
+        { tags: req.query.tag },
+        { category: req.query.tag }
+      ];
     }
-
+    
     // Filter by content language
     if (req.query.contentLanguage) {
       filter.contentLanguage = req.query.contentLanguage;
@@ -287,11 +290,18 @@ const getPublicProducts = async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .select('title price description images ratings source sourceUrl category tags scrapedAt'); // Select only needed fields
+      .select('title price description images ratings source sourceUrl category tags scrapedAt');
+
+    // If only category and limit are provided (for similar products), return array directly
+    if (
+      Object.keys(req.query).filter(k => !['category', 'limit'].includes(k)).length === 0 &&
+      req.query.category && req.query.limit
+    ) {
+      return res.json(products);
+    }
 
     const totalProducts = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProducts / limit);
-    
     res.json({
       products,
       totalProducts,
