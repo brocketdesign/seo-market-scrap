@@ -48,8 +48,11 @@ nextApp.prepare().then(() => {
       'https://rakurabu.com',
       'https://app.rakurabu.com',
       'https://app.rakurabu.com/ja',
+      'https://app.rakurabu.com/ja/',
       'https://www.rakurabu.com/ja',
+      'https://www.rakurabu.com/ja/',
       'https://rakurabu.com/ja',
+      'https://rakurabu.com/ja/',
       'https://seo-market-scraper-302575e6832d.herokuapp.com',
       process.env.FRONTEND_URL
     ].filter(Boolean),
