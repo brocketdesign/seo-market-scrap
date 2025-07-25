@@ -47,6 +47,7 @@ nextApp.prepare().then(() => {
       'https://www.rakurabu.com',
       'https://rakurabu.com',
       'https://app.rakurabu.com',
+      'https://app.rakurabu.com/',
       'https://app.rakurabu.com/ja',
       'https://app.rakurabu.com/ja/',
       'https://www.rakurabu.com/ja',
