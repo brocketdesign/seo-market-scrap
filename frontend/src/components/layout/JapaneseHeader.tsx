@@ -31,12 +31,12 @@ const JapaneseHeader = () => {
   ];
 
   const quickCategories = [
-    { name: '家電', href: '/ja/tags/家電' },
-    { name: 'ファッション', href: '/ja/tags/ファッション' },
-    { name: '美容・コスメ', href: '/ja/tags/美容' },
-    { name: 'スポーツ', href: '/ja/tags/スポーツ' },
-    { name: '本・雑誌', href: '/ja/tags/本' },
-    { name: 'ゲーム', href: '/ja/tags/ゲーム' },
+    { name: '家電', href: '/ja/search?q=家電' },
+    { name: 'ファッション', href: '/ja/search?q=ファッション' },
+    { name: '美容・コスメ', href: '/ja/search?q=美容' },
+    { name: 'スポーツ', href: '/ja/search?q=スポーツ' },
+    { name: '本・雑誌', href: '/ja/search?q=本' },
+    { name: 'ゲーム', href: '/ja/search?q=ゲーム' },
   ];
 
   return (
@@ -167,6 +167,9 @@ const JapaneseHeader = () => {
                 key={category.name}
                 href={category.href}
                 className="text-gray-700 hover:text-blue-600 transition-colors"
+                onClick={() => {
+                  router.push(category.href);
+                }}
               >
                 {category.name}
               </Link>
