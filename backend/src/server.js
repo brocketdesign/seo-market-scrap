@@ -39,37 +39,28 @@ const nextApp = next({ dev, dir: path.resolve(__dirname, '../../frontend') });
 const handle = nextApp.getRequestHandler();
 
 nextApp.prepare().then(() => {
-  // Middleware: CORS with enhanced configuration
+  // Middleware: CORS
   app.use(cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://www.rakurabu.com',
-        'https://rakurabu.com',
-        'https://app.rakurabu.com',
-        'https://seo-market-scraper-302575e6832d.herokuapp.com',
-        process.env.FRONTEND_URL
-      ].filter(Boolean);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log(`[CORS] Blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'https://www.rakurabu.com',
+      'https://rakurabu.com',
+      'https://app.rakurabu.com',
+      'https://app.rakurabu.com/',
+      'https://app.rakurabu.com/ja',
+      'https://app.rakurabu.com/ja/',
+      'https://www.rakurabu.com/ja',
+      'https://www.rakurabu.com/ja/',
+      'https://rakurabu.com/ja',
+      'https://rakurabu.com/ja/',
+      'https://seo-market-scraper-302575e6832d.herokuapp.com',
+      process.env.FRONTEND_URL
+    ].filter(Boolean),
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
-
-  // Handle preflight requests explicitly
-  app.options('*', cors());
 
   // Middleware: JSON parsing
   app.use(express.json({ extended: false }));
