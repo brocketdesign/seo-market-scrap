@@ -47,14 +47,14 @@ export default function RakutenPage() {
             <div className="flex justify-center mt-6">
               
               <a href="https://rpx.a8.net/svt/ejp?a8mat=455G3P+70FU1M+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa25051679799_455G3P_70FU1M_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
-              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" border="0"/></a>
-              <img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
+              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" style={{border: 0}}/></a>
+              <img style={{border: 0}} width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
               <a href="https://rpx.a8.net/svt/ejp?a8mat=455G3P+70FU1M+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa25051679799_455G3P_70FU1M_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
-              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" border="0"/></a>
-              <img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
+              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" style={{border: 0}}/></a>
+              <img style={{border: 0}} width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
               <a href="https://rpx.a8.net/svt/ejp?a8mat=455G3P+70FU1M+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa25051679799_455G3P_70FU1M_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
-              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" border="0"/></a>
-              <img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
+              <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" style={{border: 0}}/></a>
+              <img style={{border: 0}} width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=455G3P+70FU1M+2HOM+656YP" alt=""/>
 
             </div>
             {/* Simplified affiliate section */}
