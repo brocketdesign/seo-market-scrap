@@ -12,6 +12,7 @@ const scrapingRoutes = require('./routes/scrapingRoutes');
 const cronJobRoutes = require('./routes/cronJobRoutes');
 const productRoutes = require('./routes/productRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const affiliationRoutes = require('./routes/affiliationRoutes');
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -72,6 +73,7 @@ nextApp.prepare().then(() => {
   app.use('/api/cron-jobs', cronJobRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/affiliation', affiliationRoutes);
   console.log('[BACKEND] All API routes registered successfully');
 
   // Dev root route
