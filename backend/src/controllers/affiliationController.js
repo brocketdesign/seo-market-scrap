@@ -47,12 +47,19 @@ const validateToken = async (req, res) => {
     // Get the requesting domain
     const domain = req.get('origin') || req.get('host') || 'app.rakurabu.com';
 
+    console.log('🔍 Token validation request:');
+    console.log('- Token:', token);
+    console.log('- Domain:', domain);
+    console.log('- WordPress API URL:', `${WORDPRESS_API_URL}/validate-external-token`);
+    
     // Call WordPress API to validate token
     const response = await axios.post(`${WORDPRESS_API_URL}/validate-external-token`, {
       token: token,
       secret: SHARED_SECRET,
       domain: domain
     });
+
+    console.log('✅ WordPress API response:', response.data);
 
     if (response.data.success) {
       return res.json({
@@ -68,7 +75,16 @@ const validateToken = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Token validation error:', error.message);
+    console.error('Token validation error details:');
+    console.error('- Error message:', error.message);
+    console.error('- Error code:', error.code);
+    console.error('- Error stack:', error.stack);
+    
+    if (error.response) {
+      console.error('- Response status:', error.response.status);
+      console.error('- Response data:', error.response.data);
+      console.error('- Response headers:', error.response.headers);
+    }
     
     // Handle different types of errors
     if (error.response) {
@@ -80,7 +96,11 @@ const validateToken = async (req, res) => {
     
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during token validation'
+      message: 'Internal server error during token validation',
+      debug: {
+        errorMessage: error.message,
+        errorCode: error.code
+      }
     });
   }
 };
