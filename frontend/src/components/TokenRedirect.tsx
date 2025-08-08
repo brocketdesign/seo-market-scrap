@@ -17,8 +17,6 @@ interface RedirectResponse {
   success: boolean;
   pageId?: number;
   redirectUrl?: string;
-  affiliateName?: string;
-  category?: string;
   hasToken?: boolean;
   message?: string;
 }
@@ -34,28 +32,15 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('t');
       
-      console.log('🔍 TokenRedirect Debug:');
-      console.log('- Current URL:', window.location.href);
-      console.log('- URL Search Params:', window.location.search);
-      console.log('- Extracted token:', token);
-      console.log('- Token length:', token?.length);
-      console.log('- PageId:', pageId);
-      
       if (!token) {
-        console.log('❌ No token found in URL parameters');
         return; // No token, nothing to do
       }
 
-      console.log('✅ Token found, starting validation process...');
       setIsProcessing(true);
       setError(null);
 
       try {
         // First, validate the token
-        console.log('🔄 Calling token validation API...');
-        console.log('- API URL:', '/api/affiliation/validate-token');
-        console.log('- Request payload:', { token });
-        
         const tokenValidation = await fetch('/api/affiliation/validate-token', {
           method: 'POST',
           headers: {
@@ -64,52 +49,29 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
           body: JSON.stringify({ token }),
         });
 
-        console.log('📡 Token validation response status:', tokenValidation.status);
-        console.log('📡 Token validation response headers:', Object.fromEntries(tokenValidation.headers.entries()));
-
         const tokenResult: TokenValidationResponse = await tokenValidation.json();
-        console.log('📋 Token validation result:', tokenResult);
 
         if (!tokenResult.success) {
-          console.log('❌ Token validation failed:', tokenResult.message);
           throw new Error(tokenResult.message || 'Token validation failed');
         }
 
-        console.log('✅ Token validation successful!');
-
         // If pageId is provided, get the redirect URL
         if (pageId) {
-          console.log('🔄 Getting redirect URL for pageId:', pageId);
-          const redirectUrl = `/api/affiliation/redirect/${pageId}?token=${encodeURIComponent(token)}`;
-          console.log('- Redirect API URL:', redirectUrl);
-          
-          const redirectResponse = await fetch(redirectUrl);
-          console.log('📡 Redirect response status:', redirectResponse.status);
-          
+          const redirectResponse = await fetch(`/api/affiliation/redirect/${pageId}?token=${encodeURIComponent(token)}`);
           const redirectResult: RedirectResponse = await redirectResponse.json();
-          console.log('📋 Redirect result:', redirectResult);
 
           if (redirectResult.success && redirectResult.redirectUrl) {
-            console.log('✅ Redirect URL obtained:', redirectResult.redirectUrl);
-            console.log('- Affiliate name:', redirectResult.affiliateName);
-            console.log('- Category:', redirectResult.category);
-            
             // Clean up URL by removing token parameter
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.delete('t');
-            console.log('🧹 Cleaning up URL from:', window.location.href);
-            console.log('🧹 Cleaning up URL to:', newUrl.toString());
             window.history.replaceState(null, '', newUrl.toString());
 
             // Set cookie to prevent multiple redirects
             const cookieName = `tokenRedirect-${pageId}`;
             const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-            const cookieValue = `${cookieName}=1; expires=${expiry.toUTCString()}; path=/; SameSite=Strict`;
-            console.log('🍪 Setting cookie:', cookieValue);
-            document.cookie = cookieValue;
+            document.cookie = `${cookieName}=1; expires=${expiry.toUTCString()}; path=/; SameSite=Strict`;
 
             // Call callback if provided
-            console.log('📞 Calling onRedirectStart callback...');
             if (onRedirectStart) {
               onRedirectStart();
             }
@@ -120,15 +82,7 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
               ? `https:${redirectResult.redirectUrl}`
               : redirectResult.redirectUrl;
             
-            console.log('🚀 Final redirect URL:', finalUrl);
-            console.log('🚀 Redirecting in 2 seconds...');
-            
-            // Add a small delay so we can see the logs
-            setTimeout(() => {
-              console.log('🚀 REDIRECTING NOW!');
-              window.location.href = finalUrl;
-            }, 2000);
-            
+            window.location.href = finalUrl;
             return;
           } else {
             throw new Error(redirectResult.message || 'No redirect URL found');
