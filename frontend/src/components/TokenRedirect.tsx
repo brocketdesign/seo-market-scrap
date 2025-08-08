@@ -31,6 +31,20 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
         return; // No token, nothing to do
       }
 
+      // Check if we've already processed this specific token
+      const cookieName = `tokenUsed-${token}`;
+      const hasUsedToken = document.cookie
+        .split(';')
+        .some(cookie => cookie.trim().startsWith(`${cookieName}=`));
+      
+      if (hasUsedToken) {
+        // Token already used, just clean up URL
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('t');
+        window.history.replaceState(null, '', newUrl.toString());
+        return;
+      }
+
       try {
         // First, validate the token
         const tokenValidation = await fetch('/api/affiliation/validate-token', {
@@ -58,9 +72,8 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
             newUrl.searchParams.delete('t');
             window.history.replaceState(null, '', newUrl.toString());
 
-            // Set cookie to prevent multiple redirects
-            const cookieName = `tokenRedirect-${pageId}`;
-            const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+            // Set cookie to prevent multiple redirects with the SAME token
+            const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
             document.cookie = `${cookieName}=1; expires=${expiry.toUTCString()}; path=/; SameSite=Strict`;
 
             // Call callback if provided
@@ -100,18 +113,6 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
         window.history.replaceState(null, '', newUrl.toString());
       }
     };
-
-    // Check if we've already processed this page recently
-    if (pageId) {
-      const cookieName = `tokenRedirect-${pageId}`;
-      const hasRecentRedirect = document.cookie
-        .split(';')
-        .some(cookie => cookie.trim().startsWith(`${cookieName}=`));
-      
-      if (hasRecentRedirect) {
-        return; // Skip if we've already redirected recently
-      }
-    }
 
     handleTokenRedirect();
   }, [pageId, onRedirectStart, onRedirectError]);
