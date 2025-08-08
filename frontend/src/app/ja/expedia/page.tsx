@@ -1,40 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { useTokenRedirect } from '@/hooks/useTokenRedirect';
+import TokenRedirect from '@/components/TokenRedirect';
 
-// Example page using the hook instead of the component
+// Example page that corresponds to pageId 195 (Expedia affiliate)
 export default function ExpediaProductPage() {
-  const [redirectStatus, setRedirectStatus] = useState<string | null>(null);
-
-  const handleRedirectStart = () => {
-    setRedirectStatus('Expedia にリダイレクト中...');
-  };
-
-  const handleRedirectError = (error: string) => {
-    setRedirectStatus(`エラー: ${error}`);
-  };
-
-  // Use the hook for token redirection
-  useTokenRedirect({
-    pageId: 195, // Expedia affiliate ID
-    onRedirectStart: handleRedirectStart,
-    onRedirectError: handleRedirectError,
-  });
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Token Redirect Component - handles automatic redirection silently */}
+      <TokenRedirect 
+        pageId={195} // Expedia affiliate ID
+      />
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
             Expedia 旅行特集
           </h1>
-
-          {redirectStatus && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-blue-800">{redirectStatus}</p>
-            </div>
-          )}
 
           <div className="prose max-w-none">
             <p className="text-lg text-gray-700 mb-4">

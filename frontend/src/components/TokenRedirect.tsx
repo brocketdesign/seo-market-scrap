@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 interface TokenRedirectProps {
   pageId?: number;
@@ -22,10 +21,6 @@ interface RedirectResponse {
 }
 
 export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError }: TokenRedirectProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
   useEffect(() => {
     const handleTokenRedirect = async () => {
       // Get token from URL parameters
@@ -35,9 +30,6 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
       if (!token) {
         return; // No token, nothing to do
       }
-
-      setIsProcessing(true);
-      setError(null);
 
       try {
         // First, validate the token
@@ -96,10 +88,9 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
         }
 
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        setError(errorMessage);
-        
+        // Silent error handling - no user feedback
         if (onRedirectError) {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
           onRedirectError(errorMessage);
         }
 
@@ -107,8 +98,6 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('t');
         window.history.replaceState(null, '', newUrl.toString());
-      } finally {
-        setIsProcessing(false);
       }
     };
 
@@ -127,33 +116,6 @@ export default function TokenRedirect({ pageId, onRedirectStart, onRedirectError
     handleTokenRedirect();
   }, [pageId, onRedirectStart, onRedirectError]);
 
-  // Don't render anything visible - this is a utility component
-  if (isProcessing) {
-    return (
-      <div className="fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md shadow-md z-50">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-          <span className="text-sm">処理中...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded-md shadow-md z-50">
-        <div className="flex items-center justify-between space-x-2">
-          <span className="text-sm">エラー: {error}</span>
-          <button 
-            onClick={() => setError(null)}
-            className="text-red-700 hover:text-red-900 text-lg font-bold leading-none"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // This component is completely invisible to the user
   return null;
 }

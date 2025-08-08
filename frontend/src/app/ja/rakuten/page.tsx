@@ -1,26 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import TokenRedirect from '@/components/TokenRedirect';
 
 export default function RakutenPage() {
-  const [redirectStatus, setRedirectStatus] = useState<string | null>(null);
-
-  const handleRedirectStart = () => {
-    setRedirectStatus('楽天市場にリダイレクト中...');
-  };
-
-  const handleRedirectError = (error: string) => {
-    setRedirectStatus(`エラー: ${error}`);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
-      {/* Token Redirect Component - handles automatic redirection */}
+      {/* Token Redirect Component - handles automatic redirection silently */}
       <TokenRedirect 
         pageId={301} // Rakuten affiliate ID
-        onRedirectStart={handleRedirectStart}
-        onRedirectError={handleRedirectError}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -38,16 +25,6 @@ export default function RakutenPage() {
             日本最大級のインターネットショッピングモール！豊富な商品ラインナップと楽天ポイントでお得にお買い物
           </p>
         </div>
-
-        {/* Redirect Status */}
-        {redirectStatus && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mr-3"></div>
-              <p className="text-red-800 font-medium">{redirectStatus}</p>
-            </div>
-          </div>
-        )}
 
         {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
