@@ -132,8 +132,8 @@ export default function JapaneseHomePage() {
 
           {/* Store Links */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <div className="text-sm text-gray-600 mb-2">セール情報を探す</div>
-            <Link href="/ja/search?source=rakuten" className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200 transition-colors">
+            <div className="text-sm text-gray-600 mb-2" style={{ display: 'inline-block', width: '100%' }}>セール情報を探す</div>
+            <Link href="/ja/rakuten" className="bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200 transition-colors">
               楽天市場
             </Link>
             <Link href="/ja/search?source=amazon" className="bg-orange-100 text-orange-700 px-4 py-2 rounded-md hover:bg-orange-200 transition-colors">
